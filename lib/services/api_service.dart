@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../config.dart';
+import '../models/estudiante.dart';
 
 /// Error "amigable" de la API: [mensaje] está pensado para mostrarse tal cual
 /// en pantalla.
@@ -32,6 +33,11 @@ class ApiService {
 
   final http.Client _client;
   final String baseUrl;
+
+  // --- Endpoints -------------------------------------------------------------
+
+  Future<List<Estudiante>> obtenerEstudiantes() async =>
+      parsear(await get('/estudiantes/'), Estudiante.listaFromJson);
 
   // --- Peticiones genéricas -------------------------------------------------
 

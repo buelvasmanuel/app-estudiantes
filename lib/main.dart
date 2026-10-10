@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'screens/estudiantes_screen.dart';
 import 'services/api_service.dart';
 import 'theme.dart';
 
@@ -45,10 +46,10 @@ class _InicioPageState extends State<InicioPage> {
       // a pedir todo a la API.
       body: IndexedStack(
         index: _pestana,
-        children: const [
-          _Proximamente(titulo: 'Estudiantes'),
-          _Proximamente(titulo: 'Gráficas'),
-          _Proximamente(titulo: 'Predicción'),
+        children: [
+          EstudiantesScreen(api: widget.api),
+          const _Proximamente(titulo: 'Gráficas'),
+          const _Proximamente(titulo: 'Predicción'),
         ],
       ),
       bottomNavigationBar: NavigationBar(

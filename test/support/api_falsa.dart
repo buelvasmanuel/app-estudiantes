@@ -54,3 +54,23 @@ ApiService apiFalsa(Map<String, Object?> rutas, {List<String>? registro}) {
     }),
   );
 }
+
+/// Forma real de GET /prediccion/metricas (recortada).
+const metricasJson = {
+  'modelo': 'Regresión Logística',
+  'criterio_seleccion': 'F2 medio en validación cruzada (5 particiones)',
+  'entrenado': '2026-10-10T16:55:43',
+  'carreras_validas': ['Derecho', 'Medicina', 'Psicología'],
+  'datos': {'total': 300, 'porcentaje_en_riesgo': 18.3},
+  'metricas_prueba': {
+    'accuracy': 0.917,
+    'precision': 0.8,
+    'recall': 0.727,
+    'f2': 0.741,
+  },
+  'importancias': {
+    'horas_estudio': -1.558,
+    'asistencia': -2.071,
+    'semestre': -0.089,
+  },
+};

@@ -10,6 +10,7 @@ import 'dart:ui' as ui;
 
 import 'package:app_estudiantes/main.dart';
 import 'package:app_estudiantes/models/estadistica.dart';
+import 'package:app_estudiantes/screens/prediccion_screen.dart';
 import 'package:app_estudiantes/services/api_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -80,5 +81,39 @@ void main() {
       await elegirGrafica(tester, tipo);
       await capturar(tester, '3_grafica_${tipo.ruta.replaceAll('-', '_')}');
     }
+
+    // Predicción: estudiante típico (verde) y uno con pocas horas (rojo).
+    await tester.tap(find.text('Predicción'));
+    await esperarA(tester, find.byType(DropdownMenu<String>));
+    await tester.tap(find.byType(DropdownMenu<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Psicología').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Predecir'));
+    await esperarA(tester, find.text('Sin riesgo académico'));
+    await capturar(tester, '4_prediccion_sin_riesgo');
+
+    await tester.tap(find.byType(DropdownMenu<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Medicina').last);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(Slider).at(0), const Offset(-150, 0));
+    await tester.drag(find.byType(Slider).at(1), const Offset(-60, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Predecir'));
+    await esperarA(tester, find.text('En riesgo académico'));
+    await capturar(tester, '5_prediccion_en_riesgo');
+
+    await tester.scrollUntilVisible(
+      find.text('Variables más influyentes'),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(PrediccionScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await capturar(tester, '6_sobre_el_modelo');
   });
 }

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../config.dart';
 import '../models/estadistica.dart';
 import '../models/estudiante.dart';
+import '../models/prediccion.dart';
 
 /// Error "amigable" de la API: [mensaje] está pensado para mostrarse tal cual
 /// en pantalla.
@@ -44,6 +45,15 @@ class ApiService {
       parsear(
         await get('/estudiantes/estadisticas/${tipo.ruta}'),
         Estadistica.listaFromJson,
+      );
+
+  Future<MetricasModelo> obtenerMetricas() async =>
+      parsear(await get('/prediccion/metricas'), MetricasModelo.fromJson);
+
+  Future<ResultadoPrediccion> predecirRiesgo(EntradaPrediccion entrada) async =>
+      parsear(
+        await post('/prediccion/riesgo', entrada.toJson()),
+        ResultadoPrediccion.fromJson,
       );
 
   // --- Peticiones genéricas -------------------------------------------------

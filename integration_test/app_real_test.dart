@@ -51,5 +51,24 @@ void main() {
       // ignore: avoid_print
       print('Gráfica ${tipo.ruta} OK');
     }
+
+    // --- Predicción ---
+    await tester.tap(find.text('Predicción'));
+    await esperarA(tester, find.byType(DropdownMenu<String>));
+    expect(find.text('Recall'), findsOneWidget);
+    await tester.tap(find.byType(DropdownMenu<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Medicina').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Predecir'));
+    await esperarA(tester, find.textContaining('riesgo académico'));
+    expect(find.text('No se pudo predecir'), findsNothing);
+    final resultado = find.byKey(const Key('probabilidad')).evaluate();
+    // ignore: avoid_print
+    print(
+      'Predicción OK: '
+      '${(find.textContaining('riesgo académico').evaluate().first.widget as Text).data}'
+      ' — ${(resultado.first.widget as Text).data}',
+    );
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'screens/estudiantes_screen.dart';
 import 'screens/graficas_screen.dart';
+import 'screens/prediccion_screen.dart';
 import 'services/api_service.dart';
 import 'theme.dart';
 
@@ -50,7 +51,7 @@ class _InicioPageState extends State<InicioPage> {
         children: [
           EstudiantesScreen(api: widget.api),
           GraficasScreen(api: widget.api),
-          const _Proximamente(titulo: 'Predicción'),
+          PrediccionScreen(api: widget.api),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -74,20 +75,6 @@ class _InicioPageState extends State<InicioPage> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Proximamente extends StatelessWidget {
-  const _Proximamente({required this.titulo});
-
-  final String titulo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(titulo)),
-      body: const Center(child: Text('Próximamente')),
     );
   }
 }

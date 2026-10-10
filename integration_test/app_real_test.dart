@@ -3,7 +3,9 @@
 // Requiere la API corriendo:  uvicorn app.main:app --reload --host 0.0.0.0
 // Ejecutar:                    flutter test integration_test -d linux
 import 'package:app_estudiantes/main.dart';
+import 'package:app_estudiantes/models/estadistica.dart';
 import 'package:app_estudiantes/services/api_service.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -36,5 +38,18 @@ void main() {
     print(
       'Estudiantes OK: ${find.byType(ListTile).evaluate().length} filas visibles',
     );
+
+    // --- Gráficas: los 6 tipos ---
+    await tester.tap(find.text('Gráficas'));
+    await esperarA(tester, find.byType(BarChart));
+    for (final tipo in TipoEstadistica.values) {
+      await tester.tap(find.byType(DropdownMenu<TipoEstadistica>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(tipo.nombre).last);
+      await esperarA(tester, find.byType(BarChart));
+      expect(find.text('Reintentar'), findsNothing, reason: tipo.ruta);
+      // ignore: avoid_print
+      print('Gráfica ${tipo.ruta} OK');
+    }
   });
 }

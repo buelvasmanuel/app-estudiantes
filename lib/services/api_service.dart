@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../config.dart';
+import '../models/estadistica.dart';
 import '../models/estudiante.dart';
 
 /// Error "amigable" de la API: [mensaje] está pensado para mostrarse tal cual
@@ -38,6 +39,12 @@ class ApiService {
 
   Future<List<Estudiante>> obtenerEstudiantes() async =>
       parsear(await get('/estudiantes/'), Estudiante.listaFromJson);
+
+  Future<List<Estadistica>> obtenerEstadistica(TipoEstadistica tipo) async =>
+      parsear(
+        await get('/estudiantes/estadisticas/${tipo.ruta}'),
+        Estadistica.listaFromJson,
+      );
 
   // --- Peticiones genéricas -------------------------------------------------
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'screens/estudiantes_screen.dart';
+import 'screens/graficas_screen.dart';
 import 'services/api_service.dart';
 import 'theme.dart';
 
@@ -48,7 +49,7 @@ class _InicioPageState extends State<InicioPage> {
         index: _pestana,
         children: [
           EstudiantesScreen(api: widget.api),
-          const _Proximamente(titulo: 'Gráficas'),
+          GraficasScreen(api: widget.api),
           const _Proximamente(titulo: 'Predicción'),
         ],
       ),

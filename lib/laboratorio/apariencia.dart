@@ -85,7 +85,9 @@ class MedidorRiesgo extends StatelessWidget {
               fondo: tema.colorScheme.surfaceContainerHighest,
             ),
             child: Align(
-              alignment: const Alignment(0, 0.95),
+              // Por encima de la franja inferior, por donde pasa la aguja
+              // cuando el riesgo es muy alto o muy bajo.
+              alignment: const Alignment(0, 0.55),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -178,7 +180,9 @@ class _PintorMedidor extends CustomPainter {
       ..strokeWidth = 3.5
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(
-      centro + Offset(math.cos(ang), math.sin(ang)) * radio * 0.45,
+      // Empieza lejos del centro: ahí están la cifra y su rótulo, y la aguja
+      // casi horizontal (riesgo muy alto o muy bajo) no debe taparlos.
+      centro + Offset(math.cos(ang), math.sin(ang)) * radio * 0.64,
       punta,
       pintura,
     );

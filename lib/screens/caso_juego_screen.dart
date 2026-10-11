@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../juego/celebracion.dart';
 import '../juego/juego_api.dart';
+import '../identidad.dart';
 import '../juego/modelo.dart';
 import '../laboratorio/apariencia.dart';
 import '../models/estadistica.dart';
@@ -280,50 +281,65 @@ class _Veredicto extends ConsumerWidget {
     final r = respuesta;
     final apariencia = ref.watch(aparienciaLaboratorioProvider);
     final xp = r.recompensa.xpGanada;
+    final sellos = EstiloJuego.of(context).sellos;
+    final tarjeta = Card.filled(
+      color: r.correcto ? estado.okContenedor : estado.riesgoContenedor,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              r.correcto
+                  ? '¡Correcto!${xp > 0 ? ' +$xp XP' : ''}'
+                  : 'No es ${opcion ?? 'esa'}',
+              key: const Key('veredicto'),
+              style: tema.textTheme.titleLarge?.copyWith(
+                color: r.correcto
+                    ? estado.onOkContenedor
+                    : estado.onRiesgoContenedor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (r.dato case final dato?) ...[
+              const SizedBox(height: 4),
+              Text(
+                dato,
+                style: TextStyle(
+                  color: r.correcto
+                      ? estado.onOkContenedor
+                      : estado.onRiesgoContenedor,
+                ),
+              ),
+            ],
+            if (r.correcto && yaResuelto) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Ya lo habías resuelto: esta vez no suma XP.',
+                style: TextStyle(color: estado.onOkContenedor),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Card.filled(
-          color: r.correcto ? estado.okContenedor : estado.riesgoContenedor,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  r.correcto
-                      ? '¡Correcto!${xp > 0 ? ' +$xp XP' : ''}'
-                      : 'No es ${opcion ?? 'esa'}',
-                  key: const Key('veredicto'),
-                  style: tema.textTheme.titleLarge?.copyWith(
-                    color: r.correcto
-                        ? estado.onOkContenedor
-                        : estado.onRiesgoContenedor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (r.dato case final dato?) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    dato,
-                    style: TextStyle(
-                      color: r.correcto
-                          ? estado.onOkContenedor
-                          : estado.onRiesgoContenedor,
-                    ),
-                  ),
-                ],
-                if (r.correcto && yaResuelto) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'Ya lo habías resuelto: esta vez no suma XP.',
-                    style: TextStyle(color: estado.onOkContenedor),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
+        if (sellos && r.correcto)
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              tarjeta,
+              Positioned(
+                right: 12,
+                top: -10,
+                child: Sello(texto: 'RESUELTO', color: estado.ok),
+              ),
+            ],
+          )
+        else
+          tarjeta,
         if (r.explicacion ?? r.pista case final texto?) ...[
           const SizedBox(height: 12),
           Row(

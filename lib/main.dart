@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'identidad.dart';
 import 'providers.dart';
 import 'router.dart';
-import 'theme.dart';
 
 void main() {
   runApp(const ProviderScope(retry: sinReintentos, child: EstudiantesApp()));
@@ -14,11 +14,13 @@ class EstudiantesApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final temas = Identidad.activa.temas;
     return MaterialApp.router(
       title: 'Estudiantes',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.claro,
-      darkTheme: AppTheme.oscuro,
+      theme: temas.claro,
+      darkTheme: temas.oscuro,
+      themeMode: temas.modo,
       routerConfig: ref.watch(routerProvider),
     );
   }

@@ -66,6 +66,40 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Prototipo de identidad visual (Fase 6). Fuentes de Google Fonts con
+  # licencia SIL Open Font License 1.1 (OFL.txt junto a cada una).
+  fonts:
+    - family: Fredoka
+      fonts:
+        - asset: assets/fuentes/fredoka/Fredoka-500.ttf
+          weight: 500
+        - asset: assets/fuentes/fredoka/Fredoka-600.ttf
+          weight: 600
+        - asset: assets/fuentes/fredoka/Fredoka-700.ttf
+          weight: 700
+    - family: Nunito
+      fonts:
+        - asset: assets/fuentes/nunito/Nunito-400.ttf
+          weight: 400
+        - asset: assets/fuentes/nunito/Nunito-600.ttf
+          weight: 600
+        - asset: assets/fuentes/nunito/Nunito-700.ttf
+          weight: 700
+        - asset: assets/fuentes/nunito/Nunito-800.ttf
+          weight: 800
+    - family: CourierPrime
+      fonts:
+        - asset: assets/fuentes/courierprime/CourierPrime-400.ttf
+          weight: 400
+        - asset: assets/fuentes/courierprime/CourierPrime-700.ttf
+          weight: 700
+    - family: AtkinsonHyperlegible
+      fonts:
+        - asset: assets/fuentes/atkinsonhyperlegible/AtkinsonHyperlegible-400.ttf
+          weight: 400
+        - asset: assets/fuentes/atkinsonhyperlegible/AtkinsonHyperlegible-700.ttf
+          weight: 700
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

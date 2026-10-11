@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../campus/controlador.dart';
 import '../campus/juego.dart';
 import '../campus/modelo.dart';
+import '../identidad.dart';
 import '../models/estadistica.dart';
 import '../models/estudiante.dart';
 import '../providers.dart';
@@ -188,7 +189,15 @@ class CampusVistaState extends State<CampusVista> {
                   'Mapa del campus: ${campus.edificios.length} edificios, '
                   '${campus.total} estudiantes, ${campus.enRiesgo} en riesgo. '
                   'Los edificios se pueden elegir en la lista de abajo.',
-              child: ClipRect(child: GameWidget(game: juego)),
+              child: ClipRect(
+                child: CustomPaint(
+                  painter: PintorFondoCampus(
+                    EstiloJuego.of(context).fondoCampus,
+                    Theme.of(context).colorScheme,
+                  ),
+                  child: GameWidget(game: juego),
+                ),
+              ),
             ),
           ),
         );

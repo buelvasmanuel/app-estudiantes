@@ -1,70 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/estadistica.dart';
+import '../providers.dart';
 import '../services/api_service.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/grafica_barras.dart';
 
 /// Pestaña 2: estadísticas de los estudiantes en una gráfica de barras.
-class GraficasScreen extends StatefulWidget {
-  const GraficasScreen({super.key, required this.api});
-
-  final ApiService api;
+class GraficasScreen extends ConsumerStatefulWidget {
+  const GraficasScreen({super.key});
 
   @override
-  State<GraficasScreen> createState() => _GraficasScreenState();
+  ConsumerState<GraficasScreen> createState() => _GraficasScreenState();
 }
 
-class _GraficasScreenState extends State<GraficasScreen> {
+class _GraficasScreenState extends ConsumerState<GraficasScreen> {
   TipoEstadistica _tipo = TipoEstadistica.porCarrera;
-
-  // Guardamos lo ya descargado por tipo: volver a una estadística que ya se
-  // vio es instantáneo y no repite la petición.
-  final Map<TipoEstadistica, List<Estadistica>> _datos = {};
-  final Map<TipoEstadistica, ApiException> _errores = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _cargar(_tipo);
-  }
-
-  Future<void> _cargar(TipoEstadistica tipo) async {
-    setState(() => _errores.remove(tipo));
-    try {
-      final datos = await widget.api.obtenerEstadistica(tipo);
-      if (!mounted) return;
-      setState(() => _datos[tipo] = datos);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      if (_datos.containsKey(tipo)) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(e.mensaje)));
-      } else {
-        setState(() => _errores[tipo] = e);
-      }
-    }
-  }
 
   void _seleccionar(TipoEstadistica? tipo) {
     if (tipo == null || tipo == _tipo) return;
     setState(() => _tipo = tipo);
-    if (!_datos.containsKey(tipo)) _cargar(tipo);
   }
 
-  /// Al actualizar se descarta la caché: los datos pudieron cambiar.
-  Future<void> _actualizar() {
-    final actual = _datos[_tipo];
-    _datos.clear();
-    if (actual != null) _datos[_tipo] = actual; // se ve mientras recarga
-    return _cargar(_tipo);
+  /// Al actualizar se descarta la caché de TODOS los tipos: los datos
+  /// pudieron cambiar. El tipo visible conserva su gráfica mientras recarga.
+  Future<void> _actualizar() async {
+    ref.invalidate(estadisticaProvider);
+    try {
+      await ref.read(estadisticaProvider(_tipo).future);
+    } on ApiException catch (e) {
+      if (!mounted || !ref.read(estadisticaProvider(_tipo)).hasValue) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(e.mensaje)));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final datos = _datos[_tipo];
-    final error = _errores[_tipo];
+    final estado = ref.watch(estadisticaProvider(_tipo));
+    final datos = estado.value;
 
     return Scaffold(
       appBar: AppBar(
@@ -140,25 +116,30 @@ class _GraficasScreenState extends State<GraficasScreen> {
                           const SizedBox(height: 20),
                           SizedBox(
                             height: 340,
-                            child: switch ((datos, error)) {
-                              (null, final ApiException e) => ErrorVista(
-                                error: e,
-                                onReintentar: () => _cargar(_tipo),
-                              ),
-                              (null, null) => CargandoVista(
-                                mensaje: 'Cargando estadística…',
-                                despertando: widget.api.despertando,
-                              ),
-                              (final List<Estadistica> d, _) when d.isEmpty =>
+                            child: switch (estado) {
+                              AsyncValue(value: final List<Estadistica> d)
+                                  when d.isEmpty =>
                                 const VaciaVista(
                                   mensaje:
                                       'No hay datos para esta estadística.',
                                   icono: Icons.bar_chart_outlined,
                                 ),
-                              (final List<Estadistica> d, _) => GraficaBarras(
-                                key: ValueKey(_tipo),
-                                datos: d,
-                                tipo: _tipo,
+                              AsyncValue(value: final List<Estadistica> d) =>
+                                GraficaBarras(
+                                  key: ValueKey(_tipo),
+                                  datos: d,
+                                  tipo: _tipo,
+                                ),
+                              AsyncValue(:final error?) => ErrorVista(
+                                error: error,
+                                onReintentar: () =>
+                                    ref.invalidate(estadisticaProvider(_tipo)),
+                              ),
+                              _ => CargandoVista(
+                                mensaje: 'Cargando estadística…',
+                                despertando: ref
+                                    .watch(apiServiceProvider)
+                                    .despertando,
                               ),
                             },
                           ),

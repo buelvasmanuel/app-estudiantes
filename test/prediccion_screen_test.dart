@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:app_estudiantes/screens/prediccion_screen.dart';
+import 'package:app_estudiantes/router.dart';
 import 'package:app_estudiantes/services/api_service.dart';
 import 'package:app_estudiantes/theme.dart';
 import 'package:flutter/material.dart';
@@ -8,17 +8,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
 
 import 'support/api_falsa.dart';
+import 'support/app_de_prueba.dart';
 
 Future<void> _abrir(WidgetTester tester, ApiService api) async {
   tester.view.physicalSize = const Size(1000, 2400);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(
-    MaterialApp(
-      theme: AppTheme.claro,
-      home: PrediccionScreen(api: api),
-    ),
-  );
+  await tester.pumpWidget(appDePrueba(api, inicial: Rutas.prediccion));
   await tester.pumpAndSettle();
 }
 

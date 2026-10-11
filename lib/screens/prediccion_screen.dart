@@ -1,25 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/prediccion.dart';
+import '../providers.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 
 /// Pestaña 3: formulario que pide al modelo de la API si un estudiante con
 /// esos datos estaría en riesgo académico.
-class PrediccionScreen extends StatefulWidget {
-  const PrediccionScreen({super.key, required this.api});
-
-  final ApiService api;
+class PrediccionScreen extends ConsumerStatefulWidget {
+  const PrediccionScreen({super.key});
 
   @override
-  State<PrediccionScreen> createState() => _PrediccionScreenState();
+  ConsumerState<PrediccionScreen> createState() => _PrediccionScreenState();
 }
 
-class _PrediccionScreenState extends State<PrediccionScreen> {
-  // --- Carga inicial de /prediccion/metricas (carreras del desplegable) ---
-  MetricasModelo? _metricas;
-  ApiException? _errorMetricas;
+class _PrediccionScreenState extends ConsumerState<PrediccionScreen> {
+  // Las métricas (/prediccion/metricas, con las carreras del desplegable) las
+  // guarda metricasProvider; aquí queda el formulario y la predicción.
 
   // --- Formulario (valores iniciales: un estudiante "típico") ---
   String? _carrera;
@@ -33,28 +32,6 @@ class _PrediccionScreenState extends State<PrediccionScreen> {
   ResultadoPrediccion? _resultado;
   EntradaPrediccion? _entradaDelResultado;
   ApiException? _errorPrediccion;
-
-  @override
-  void initState() {
-    super.initState();
-    _cargarMetricas();
-  }
-
-  Future<void> _cargarMetricas() async {
-    setState(() => _errorMetricas = null);
-    try {
-      final metricas = await widget.api.obtenerMetricas();
-      if (!mounted) return;
-      setState(() {
-        _metricas = metricas;
-        // Si la carrera elegida ya no existe en el modelo, se descarta.
-        if (!metricas.carrerasValidas.contains(_carrera)) _carrera = null;
-      });
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMetricas = e);
-    }
-  }
 
   EntradaPrediccion? get _entrada {
     final carrera = _carrera;
@@ -76,7 +53,9 @@ class _PrediccionScreenState extends State<PrediccionScreen> {
       _errorPrediccion = null;
     });
     try {
-      final resultado = await widget.api.predecirRiesgo(entrada);
+      final resultado = await ref
+          .read(apiServiceProvider)
+          .predecirRiesgo(entrada);
       if (!mounted) return;
       setState(() {
         _resultado = resultado;
@@ -92,19 +71,26 @@ class _PrediccionScreenState extends State<PrediccionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final metricas = _metricas;
+    // Si al recargar las métricas la carrera elegida ya no existe en el
+    // modelo, se descarta.
+    ref.listen(metricasProvider, (_, siguiente) {
+      final carreras = siguiente.value?.carrerasValidas;
+      if (carreras != null && !carreras.contains(_carrera)) {
+        setState(() => _carrera = null);
+      }
+    });
     return Scaffold(
       appBar: AppBar(title: const Text('Predicción de riesgo')),
-      body: switch ((metricas, _errorMetricas)) {
-        (null, final ApiException e) => ErrorVista(
-          error: e,
-          onReintentar: _cargarMetricas,
+      body: switch (ref.watch(metricasProvider)) {
+        AsyncValue(value: final MetricasModelo m) => _contenido(m),
+        AsyncValue(:final error?) => ErrorVista(
+          error: error,
+          onReintentar: () => ref.invalidate(metricasProvider),
         ),
-        (null, null) => CargandoVista(
+        _ => CargandoVista(
           mensaje: 'Cargando el modelo…',
-          despertando: widget.api.despertando,
+          despertando: ref.watch(apiServiceProvider).despertando,
         ),
-        (final MetricasModelo m, _) => _contenido(m),
       },
     );
   }
@@ -203,7 +189,7 @@ class _PrediccionScreenState extends State<PrediccionScreen> {
                       )
                     : const Icon(Icons.psychology_alt_outlined),
                 label: ValueListenableBuilder<bool>(
-                  valueListenable: widget.api.despertando,
+                  valueListenable: ref.watch(apiServiceProvider).despertando,
                   builder: (context, dormido, _) => Text(
                     entrada == null
                         ? 'Elige una carrera para predecir'

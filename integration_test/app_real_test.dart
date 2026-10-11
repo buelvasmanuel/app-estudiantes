@@ -4,9 +4,10 @@
 // Ejecutar:                    flutter test integration_test -d linux
 import 'package:app_estudiantes/main.dart';
 import 'package:app_estudiantes/models/estadistica.dart';
-import 'package:app_estudiantes/services/api_service.dart';
+import 'package:app_estudiantes/providers.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -14,7 +15,8 @@ import 'package:integration_test/integration_test.dart';
 Future<void> esperarA(
   WidgetTester tester,
   Finder finder, {
-  Duration maximo = const Duration(seconds: 15),
+  // Más que el timeout en frío (60 s): Render free puede estar dormido.
+  Duration maximo = const Duration(seconds: 75),
 }) async {
   final limite = DateTime.now().add(maximo);
   while (DateTime.now().isBefore(limite)) {
@@ -28,7 +30,9 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('las pestañas cargan datos de la API real', (tester) async {
-    await tester.pumpWidget(EstudiantesApp(api: ApiService()));
+    await tester.pumpWidget(
+      const ProviderScope(retry: sinReintentos, child: EstudiantesApp()),
+    );
 
     // --- Estudiantes ---
     await esperarA(tester, find.byType(ListTile));

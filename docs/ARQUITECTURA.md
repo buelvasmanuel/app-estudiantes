@@ -187,3 +187,15 @@ Android: `INTERNET` declarado y `android:usesCleartextTraffic="true"` **global**
 5. `CORSMiddleware` con `allow_methods=["*"]`, `allow_headers=["*"]` y sin `allow_credentials` (cambiará con cookies).
 6. Sin CI para la API.
 7. `joblib.load` (pickle) del modelo: aceptable solo porque se genera en el build.
+
+## 9. Cambios posteriores a la verificación
+
+Este documento describe el estado del commit `6b2c770`. Desde entonces:
+
+- **Android** (`8b3f401`): `usesCleartextTraffic` global sustituido por
+  `network_security_config`: release solo HTTPS, debug permite `http://`.
+- **Riverpod 3 + go_router 18**: `providers.dart` (ApiService, estudiantes,
+  estadísticas por tipo, métricas) y `router.dart` (`StatefulShellRoute.indexedStack`,
+  detalle en `/estudiantes/:id` sobre el Navigator raíz). Las ramas se
+  construyen al visitarlas: al arrancar solo se pide `GET /estudiantes/`
+  (resuelve la deuda 3 del frontend). Reintentos automáticos desactivados.

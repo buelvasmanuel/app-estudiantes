@@ -1,70 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../models/estudiante.dart';
+import '../providers.dart';
+import '../router.dart';
 import '../services/api_service.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/promedio_badge.dart';
-import 'estudiante_detalle_screen.dart';
 
 /// Pestaña 1: listado de estudiantes con buscador, filtro y pull-to-refresh.
-class EstudiantesScreen extends StatefulWidget {
-  const EstudiantesScreen({super.key, required this.api});
-
-  final ApiService api;
+class EstudiantesScreen extends ConsumerStatefulWidget {
+  const EstudiantesScreen({super.key});
 
   @override
-  State<EstudiantesScreen> createState() => _EstudiantesScreenState();
+  ConsumerState<EstudiantesScreen> createState() => _EstudiantesScreenState();
 }
 
-class _EstudiantesScreenState extends State<EstudiantesScreen> {
-  // Los tres estados de la pantalla:
-  //   cargando  → _estudiantes == null && _error == null
-  //   error     → _error != null (y no hay datos que mostrar)
-  //   datos     → _estudiantes != null
-  List<Estudiante>? _estudiantes;
-  Object? _error;
-
+class _EstudiantesScreenState extends ConsumerState<EstudiantesScreen> {
+  // Los datos (cargando / error / lista) los guarda estudiantesProvider; aquí
+  // solo queda el estado de la interfaz.
   String _busqueda = '';
   bool _soloRiesgo = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _cargar();
-  }
-
-  Future<void> _cargar() async {
+  Future<void> _actualizar() async {
     try {
-      final estudiantes = await widget.api.obtenerEstudiantes();
-      // Tras un await la pantalla pudo cerrarse: comprobar `mounted` antes
-      // de llamar a setState evita el error "setState() called after dispose".
-      if (!mounted) return;
-      setState(() {
-        _estudiantes = estudiantes;
-        _error = null;
-      });
+      ref.invalidate(estudiantesProvider);
+      await ref.read(estudiantesProvider.future);
     } on ApiException catch (e) {
+      // Tras un await la pantalla pudo cerrarse: comprobar `mounted` antes
+      // de usar el context.
       if (!mounted) return;
-      if (_estudiantes == null) {
-        setState(() => _error = e);
-      } else {
-        // Si ya había datos (pull-to-refresh), no los tapamos con el error.
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(e.mensaje)));
-      }
+      // Si ya había datos, no los tapamos con el error (el provider conserva
+      // la lista anterior): basta con avisar.
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(e.mensaje)));
     }
   }
 
-  void _reintentar() {
-    setState(() => _error = null);
-    _cargar();
-  }
-
-  List<Estudiante> get _filtrados {
+  List<Estudiante> _filtrar(List<Estudiante> estudiantes) {
     final consulta = normalizar(_busqueda.trim());
     return [
-      for (final e in _estudiantes ?? const <Estudiante>[])
+      for (final e in estudiantes)
         if ((!_soloRiesgo || e.enRiesgo) &&
             (consulta.isEmpty || e.textoBusqueda.contains(consulta)))
           e,
@@ -73,7 +51,8 @@ class _EstudiantesScreenState extends State<EstudiantesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final estudiantes = _estudiantes;
+    final estado = ref.watch(estudiantesProvider);
+    final estudiantes = estado.value;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Estudiantes'),
@@ -81,27 +60,27 @@ class _EstudiantesScreenState extends State<EstudiantesScreen> {
           if (estudiantes != null)
             IconButton(
               tooltip: 'Actualizar',
-              onPressed: _cargar,
+              onPressed: _actualizar,
               icon: const Icon(Icons.refresh_rounded),
             ),
         ],
       ),
-      body: switch ((estudiantes, _error)) {
-        (null, final Object error) => ErrorVista(
+      body: switch (estado) {
+        AsyncValue(value: final List<Estudiante> lista) => _contenido(lista),
+        AsyncValue(:final error?) => ErrorVista(
           error: error,
-          onReintentar: _reintentar,
+          onReintentar: () => ref.invalidate(estudiantesProvider),
         ),
-        (null, null) => CargandoVista(
+        _ => CargandoVista(
           mensaje: 'Cargando estudiantes…',
-          despertando: widget.api.despertando,
+          despertando: ref.watch(apiServiceProvider).despertando,
         ),
-        (final List<Estudiante> lista, _) => _contenido(lista),
       },
     );
   }
 
   Widget _contenido(List<Estudiante> todos) {
-    final filtrados = _filtrados;
+    final filtrados = _filtrar(todos);
     final enRiesgo = todos.where((e) => e.enRiesgo).length;
 
     return AnchoMaximo(
@@ -144,7 +123,7 @@ class _EstudiantesScreenState extends State<EstudiantesScreen> {
             // AlwaysScrollableScrollPhysics se puede tirar hacia abajo
             // aunque la lista sea corta o esté vacía.
             child: RefreshIndicator(
-              onRefresh: _cargar,
+              onRefresh: _actualizar,
               child: filtrados.isEmpty
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -197,11 +176,8 @@ class _EstudianteTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       trailing: PromedioBadge(estudiante: estudiante),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => EstudianteDetalleScreen(estudiante: estudiante),
-        ),
-      ),
+      onTap: () =>
+          context.push(Rutas.estudiante(estudiante.id), extra: estudiante),
     );
   }
 }

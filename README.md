@@ -174,7 +174,9 @@ En `android/app/src/main/AndroidManifest.xml`:
 
 ```
 lib/
-├── main.dart                  # MaterialApp + NavigationBar (IndexedStack)
+├── main.dart                  # ProviderScope + MaterialApp.router
+├── router.dart                # Rutas (go_router) y barra de 3 pestañas
+├── providers.dart             # Providers de Riverpod (ApiService y datos)
 ├── config.dart                # URL de la API (--dart-define) y timeout
 ├── theme.dart                 # Tema M3 claro/oscuro + colores de riesgo/ok
 ├── models/
@@ -264,10 +266,20 @@ flutter test integration_test/capturas_test.dart -d linux \
 - **Errores**: `ApiService` convierte los fallos en un `ApiException` con un
   mensaje para el usuario: sin conexión, *timeout* (8 s), y los `detail` de
   FastAPI (texto, objeto propio o lista de validación de Pydantic).
-- **`IndexedStack`** mantiene vivas las 3 pestañas: al cambiar no se pierde la
-  búsqueda ni el formulario, ni se repiten peticiones.
-- **`if (!mounted) return;`** después de cada `await` antes de `setState`: la
-  pantalla pudo cerrarse mientras llegaba la respuesta.
+- **Riverpod** guarda los datos de la API (`providers.dart`): cada pantalla
+  hace `ref.watch(...)` y pinta cargando / error / datos. Los datos se
+  conservan hasta que el usuario pide actualizar; si la actualización falla, se
+  sigue viendo lo anterior y se avisa con un *SnackBar*. Los reintentos
+  automáticos de Riverpod están desactivados (`sinReintentos`): el usuario
+  decide con "Reintentar".
+- **go_router** con `StatefulShellRoute.indexedStack`: cada pestaña conserva
+  su estado (búsqueda, formulario) al cambiar, pero **solo se construye la
+  primera vez que se abre**, así que al arrancar se pide únicamente lo de la
+  pestaña visible. Las rutas son URLs (`/estudiantes`, `/estudiantes/12`,
+  `/graficas`, `/prediccion`); en la web van tras `#` porque GitHub Pages no
+  reescribe rutas.
+- **`if (!mounted) return;`** después de cada `await` antes de usar el
+  `context`: la pantalla pudo cerrarse mientras llegaba la respuesta.
 - **Gráficas legibles**: las etiquetas se miden con `TextPainter` y se ponen
   horizontales, inclinadas 45° o con scroll según el espacio disponible.
 - **Las probabilidades del modelo** salen "infladas" hacia el riesgo

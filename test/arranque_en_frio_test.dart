@@ -1,13 +1,11 @@
-import 'package:app_estudiantes/screens/estudiantes_screen.dart';
 import 'package:app_estudiantes/services/api_service.dart';
-import 'package:app_estudiantes/theme.dart';
 import 'package:app_estudiantes/widgets/estado_vistas.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'support/api_falsa.dart';
+import 'support/app_de_prueba.dart';
 
 /// API que tarda [demora] en responder (simula Render despertando).
 ApiService _apiLenta(Duration Function() demora) => ApiService(
@@ -24,12 +22,7 @@ void main() {
     tester,
   ) async {
     final api = _apiLenta(() => const Duration(seconds: 40));
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.claro,
-        home: EstudiantesScreen(api: api),
-      ),
-    );
+    await tester.pumpWidget(appDePrueba(api));
 
     await tester.pump(const Duration(seconds: 1));
     expect(find.text('Cargando estudiantes…'), findsOneWidget);
@@ -50,12 +43,7 @@ void main() {
     tester,
   ) async {
     final api = _apiLenta(() => const Duration(seconds: 90));
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.claro,
-        home: EstudiantesScreen(api: api),
-      ),
-    );
+    await tester.pumpWidget(appDePrueba(api));
     await tester.pump(const Duration(seconds: 61));
     await tester.pump();
     expect(find.textContaining('no respondió en 60 s'), findsOneWidget);

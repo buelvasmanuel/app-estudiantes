@@ -1,12 +1,12 @@
 import 'package:app_estudiantes/models/estadistica.dart';
-import 'package:app_estudiantes/screens/graficas_screen.dart';
-import 'package:app_estudiantes/theme.dart';
+import 'package:app_estudiantes/router.dart';
 import 'package:app_estudiantes/widgets/grafica_barras.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/api_falsa.dart';
+import 'support/app_de_prueba.dart';
 
 void main() {
   testWidgets('carga por-carrera, cambia de tipo y usa la caché', (
@@ -23,12 +23,7 @@ void main() {
       ],
     }, registro: registro);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.claro,
-        home: GraficasScreen(api: api),
-      ),
-    );
+    await tester.pumpWidget(appDePrueba(api, inicial: Rutas.graficas));
     await tester.pumpAndSettle();
 
     expect(find.byType(GraficaBarras), findsOneWidget);
@@ -55,12 +50,7 @@ void main() {
     tester,
   ) async {
     final api = apiFalsa({});
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.claro,
-        home: GraficasScreen(api: api),
-      ),
-    );
+    await tester.pumpWidget(appDePrueba(api, inicial: Rutas.graficas));
     await tester.pumpAndSettle();
     expect(find.text('Reintentar'), findsOneWidget);
   });

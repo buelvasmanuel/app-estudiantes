@@ -1,20 +1,16 @@
 import 'package:app_estudiantes/screens/estudiante_detalle_screen.dart';
-import 'package:app_estudiantes/screens/estudiantes_screen.dart';
-import 'package:app_estudiantes/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/api_falsa.dart';
-
-Widget _app(Widget pantalla) =>
-    MaterialApp(theme: AppTheme.claro, home: pantalla);
+import 'support/app_de_prueba.dart';
 
 void main() {
   testWidgets('muestra la lista, el contador de riesgo y abre el detalle', (
     tester,
   ) async {
     final api = apiFalsa({'/estudiantes/': estudiantesJson});
-    await tester.pumpWidget(_app(EstudiantesScreen(api: api)));
+    await tester.pumpWidget(appDePrueba(api));
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     await tester.pumpAndSettle();
@@ -34,7 +30,7 @@ void main() {
     tester,
   ) async {
     final api = apiFalsa({'/estudiantes/': estudiantesJson});
-    await tester.pumpWidget(_app(EstudiantesScreen(api: api)));
+    await tester.pumpWidget(appDePrueba(api));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(SearchBar), 'rodriguez');
@@ -55,7 +51,7 @@ void main() {
     final rutas = <String, Object?>{};
     final registro = <String>[];
     final api = apiFalsa(rutas, registro: registro);
-    await tester.pumpWidget(_app(EstudiantesScreen(api: api)));
+    await tester.pumpWidget(appDePrueba(api));
     await tester.pumpAndSettle();
 
     expect(find.text('Sin conexión con la API'), findsOneWidget);

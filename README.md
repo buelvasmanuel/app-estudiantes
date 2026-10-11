@@ -45,11 +45,18 @@ firma de depuración).
 
 ## Requisitos
 
-- Flutter 3.27 o superior (probado con 3.47.2 / Dart 3.13).
-- La API `api-tienda` con datos (`python -m scripts.seed_estudiantes`) y el
-  modelo entrenado (`python -m scripts.entrenar_modelo`).
-- Paquetes: [`http`](https://pub.dev/packages/http) 1.6 y
-  [`fl_chart`](https://pub.dev/packages/fl_chart) 1.2.
+- Flutter 3.47 o superior (probado con 3.47.2 / Dart 3.13).
+- La API `api-tienda` con datos (`python -m scripts.seed_estudiantes`), el
+  modelo entrenado (`python -m scripts.entrenar_modelo`) y las cuentas de
+  usuario (`/auth`, ver `docs/CONTRATO_AUTH.md` en `api-tienda`).
+- Paquetes: [`http`](https://pub.dev/packages/http),
+  [`fl_chart`](https://pub.dev/packages/fl_chart),
+  [`flutter_riverpod`](https://pub.dev/packages/flutter_riverpod),
+  [`go_router`](https://pub.dev/packages/go_router) y
+  [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage).
+- **Linux**: `libsecret` (guarda la sesión en el llavero del sistema):
+  `sudo apt install libsecret-1-dev` (Ubuntu/Debian) o
+  `sudo pacman -S libsecret` (Arch).
 
 ```bash
 flutter pub get
@@ -176,17 +183,21 @@ En `android/app/src/main/AndroidManifest.xml`:
 lib/
 ├── main.dart                  # ProviderScope + MaterialApp.router
 ├── router.dart                # Rutas (go_router) y barra de 3 pestañas
-├── providers.dart             # Providers de Riverpod (ApiService y datos)
+├── providers.dart             # Providers de Riverpod (ApiService, sesión y datos)
 ├── config.dart                # URL de la API (--dart-define) y timeout
 ├── theme.dart                 # Tema M3 claro/oscuro + colores de riesgo/ok
 ├── models/
 │   ├── json_utils.dart        # Lectura segura de JSON (num, String, bool...)
 │   ├── estudiante.dart
 │   ├── estadistica.dart       # Estadistica + enum TipoEstadistica (6 tipos)
-│   └── prediccion.dart        # Entrada, resultado y métricas del modelo
+│   ├── prediccion.dart        # Entrada, resultado y métricas del modelo
+│   └── sesion.dart            # Usuario, Rol y Tokens (respuesta de /auth)
 ├── services/
-│   └── api_service.dart       # Único punto que habla con la API
+│   ├── api_service.dart       # Único punto que habla con la API (+ interceptores)
+│   ├── sesion.dart            # GestorSesion: login, registro, logout, refresh
+│   └── almacen_refresh.dart   # Dónde se guarda el refresh token
 ├── screens/
+│   ├── acceso_screen.dart     # Login, registro y "recuperando sesión"
 │   ├── estudiantes_screen.dart
 │   ├── estudiante_detalle_screen.dart
 │   ├── graficas_screen.dart
@@ -194,6 +205,7 @@ lib/
 └── widgets/
     ├── estado_vistas.dart     # Cargando / Error con Reintentar / Vacío
     ├── grafica_barras.dart    # BarChart de fl_chart
+    ├── menu_cuenta.dart       # Alias + cerrar sesión (barra superior)
     └── promedio_badge.dart    # Pastilla y avatar con el color del riesgo
 ```
 
@@ -236,6 +248,12 @@ comprueba que las 3 pestañas cargan datos reales (y las 6 gráficas):
 flutter test integration_test/app_real_test.dart -d linux
 ```
 
+El almacén seguro real de la plataforma (en Linux, libsecret) se prueba con:
+
+```bash
+flutter test integration_test/almacen_seguro_test.dart -d linux
+```
+
 Para regenerar las capturas de `docs/capturas/` (tamaño celular, datos reales):
 
 ```bash
@@ -253,6 +271,20 @@ flutter test integration_test/capturas_test.dart -d linux \
 | Lista vacía | En la API: `python -m scripts.seed_estudiantes`. |
 | El celular aparece y desaparece en `flutter devices` | Hay dos `adb` instalados (`/usr/bin/adb` y el del SDK). Deja solo uno. |
 | Cambié `API_URL` y no hace nada | Es de compilación: detén la app y vuelve a hacer `flutter run`. |
+
+## Cuentas y sesión
+
+La app pide iniciar sesión (o registrarse con alias y contraseña) antes de
+mostrar nada. Implementa el contrato `docs/CONTRATO_AUTH.md` del repo
+`api-tienda`:
+
+| | |
+|---|---|
+| **Access token** | Va en `Authorization: Bearer …`; dura 15 min y se guarda solo en memoria. Si le queda menos de 1 min, se renueva antes de enviar. |
+| **Refresh token** | Android, Windows y Linux: en el almacén seguro del sistema (`flutter_secure_storage`), así la sesión sobrevive a cerrar la app. **Web: solo en memoria** (recargar la página = volver a entrar): en el navegador no hay un almacén realmente seguro. |
+| **Interceptor** (`GestorSesion`) | Ante un `401` de token caducado renueva y repite la petición **una vez**. Si varias peticiones necesitan renovar a la vez, hay **un solo refresh en curso** y las demás lo esperan: con tokens rotativos, dos renovaciones con el mismo token parecerían un robo y la API cerraría la sesión. |
+| **Sesión cerrada** | Si la API rechaza el refresh (sesión revocada, caducada o cuenta desactivada) se borran los tokens y se vuelve al login con un aviso. Sin red, los tokens se conservan. |
+| **Android** | `allowBackup="false"`: el refresh token no viaja en la copia de seguridad de Google. |
 
 ## Detalles técnicos que vale la pena conocer
 

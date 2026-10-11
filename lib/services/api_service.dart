@@ -12,12 +12,24 @@ import '../models/prediccion.dart';
 /// Error "amigable" de la API: [mensaje] está pensado para mostrarse tal cual
 /// en pantalla.
 class ApiException implements Exception {
-  const ApiException(this.mensaje, {this.statusCode});
+  const ApiException(
+    this.mensaje, {
+    this.statusCode,
+    this.codigo,
+    this.reintentarEn,
+  });
 
   final String mensaje;
 
   /// Código HTTP (404, 422, 503...) o `null` si ni siquiera hubo respuesta.
   final int? statusCode;
+
+  /// Código de error de la API (`detail.codigo`: `token_expirado`,
+  /// `credenciales_invalidas`...). La app decide por él, nunca por el texto.
+  final String? codigo;
+
+  /// Cabecera `Retry-After` de un 429: cuánto esperar antes de reintentar.
+  final Duration? reintentarEn;
 
   bool get sinConexion => statusCode == null;
 
@@ -34,6 +46,7 @@ class PeticionApi {
     this.cuerpo,
     Map<String, String>? cabeceras,
     this.conInterceptores = true,
+    this.limite,
   }) : cabeceras = {...?cabeceras};
 
   /// `GET`, `POST`, `PUT`, `PATCH` o `DELETE`.
@@ -52,6 +65,13 @@ class PeticionApi {
   /// sesión, este intentaría renovarlo otra vez.
   final bool conInterceptores;
 
+  /// Tiempo máximo de espera propio. `null` = el normal (8 s, o 60 s si el
+  /// servidor puede estar dormido).
+  final Duration? limite;
+
+  /// 1 la primera vez, 2 si se está repitiendo. Lo actualiza [ApiService].
+  int intento = 1;
+
   @override
   String toString() => '$metodo $ruta';
 }
@@ -65,9 +85,11 @@ abstract class InterceptorApi {
   /// Se llama antes de enviar [peticion], también antes de repetirla.
   Future<void> antesDeEnviar(PeticionApi peticion) async {}
 
-  /// Se llama cuando [peticion] termina con [error]. Devolver `true` repite
-  /// la petición (una sola vez por petición, aunque varios interceptores lo
-  /// pidan): sirve para renovar un token caducado y volver a intentarlo.
+  /// Se llama cada vez que [peticion] termina con [error]. Si es el primer
+  /// intento (`peticion.intento == 1`), devolver `true` la repite: sirve para
+  /// renovar un token caducado y volver a intentarlo. Una petición se repite
+  /// como máximo una vez, aunque varios interceptores lo pidan; en el segundo
+  /// intento el valor devuelto se ignora (pero el interceptor se entera).
   Future<bool> reintentar(PeticionApi peticion, ApiException error) async =>
       false;
 }
@@ -154,23 +176,20 @@ class ApiService {
     final activos = peticion.conInterceptores
         ? List.of(interceptores) // copia: la lista puede cambiar mientras
         : const <InterceptorApi>[];
-    var repetida = false;
-    while (true) {
+    for (peticion.intento = 1; ; peticion.intento++) {
       for (final i in activos) {
         await i.antesDeEnviar(peticion);
       }
       try {
         return await _enviar(peticion);
       } on ApiException catch (error) {
-        if (repetida) rethrow;
         var repetir = false;
         for (final i in activos) {
           // Se consulta a todos (no se corta en el primero que dice "sí"):
           // cada uno puede necesitar reaccionar al error.
           if (await i.reintentar(peticion, error)) repetir = true;
         }
-        if (!repetir) rethrow;
-        repetida = true;
+        if (!repetir || peticion.intento > 1) rethrow;
       }
     }
   }
@@ -197,7 +216,8 @@ class ApiService {
 
   Future<Object?> _enviar(PeticionApi peticion) async {
     final enFrio = _enFrio;
-    final limite = enFrio ? Config.timeoutArranque : Config.timeout;
+    final limite =
+        peticion.limite ?? (enFrio ? Config.timeoutArranque : Config.timeout);
     Timer? aviso;
     if (enFrio) {
       _peticionesEnFrio++;
@@ -249,10 +269,24 @@ class ApiService {
     }
 
     if (ok) return datos;
-    throw ApiException(
-      _mensajeDeError(respuesta.statusCode, datos),
-      statusCode: respuesta.statusCode,
-    );
+    final detalle = datos is Map<String, Object?> ? datos['detail'] : null;
+    final segundos = int.tryParse(respuesta.headers['retry-after'] ?? '');
+    throw switch (detalle) {
+      // Errores con código (autenticación): el mensaje de la API está pensado
+      // para mostrarse tal cual, sin "Error (401):" delante.
+      {'codigo': final String codigo, 'mensaje': final String mensaje} =>
+        ApiException(
+          mensaje,
+          statusCode: respuesta.statusCode,
+          codigo: codigo,
+          reintentarEn: segundos == null ? null : Duration(seconds: segundos),
+        ),
+      _ => ApiException(
+        _mensajeDeError(respuesta.statusCode, datos),
+        statusCode: respuesta.statusCode,
+        reintentarEn: segundos == null ? null : Duration(seconds: segundos),
+      ),
+    };
   }
 
   /// Una petición HTTP nueva en cada intento: un `http.Request` no se puede
@@ -286,8 +320,12 @@ class ApiService {
       _ => null,
     };
     final explicacion = switch (status) {
+      401 => 'No autorizado',
+      403 => 'Sin permiso',
       404 => 'No encontrado',
+      409 => 'Conflicto',
       422 => 'Datos no válidos',
+      429 => 'Demasiadas peticiones',
       503 => 'Servicio no disponible',
       >= 500 => 'Error interno de la API',
       _ => 'Error',

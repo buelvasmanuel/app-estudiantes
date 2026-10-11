@@ -1,22 +1,47 @@
 import 'package:app_estudiantes/main.dart';
+import 'package:app_estudiantes/models/sesion.dart';
 import 'package:app_estudiantes/providers.dart';
 import 'package:app_estudiantes/router.dart';
+import 'package:app_estudiantes/services/almacen_refresh.dart';
 import 'package:app_estudiantes/services/api_service.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Una sesión ya iniciada que no caduca durante el test.
+Tokens tokensDePrueba() => Tokens(
+  access: 'access-de-prueba',
+  accessCaduca: DateTime.now().add(const Duration(hours: 1)),
+  refresh: 'refresh-de-prueba',
+  usuario: const Usuario(id: 1, alias: 'Detective_Ana', rol: Rol.jugador),
+);
+
 /// La app completa (router, pestañas, tema) con [api] en lugar de la real,
 /// empezando en la ruta [inicial].
-Widget appDePrueba(ApiService api, {String inicial = Rutas.estudiantes}) =>
-    ProviderScope(
-      retry: sinReintentos,
-      overrides: [
-        apiServiceProvider.overrideWithValue(api),
-        routerProvider.overrideWith((ref) {
-          final router = crearRouter(inicial: inicial);
-          ref.onDispose(router.dispose);
-          return router;
-        }),
-      ],
-      child: const EstudiantesApp(),
-    );
+///
+/// Por defecto ya hay sesión iniciada. Con `conSesion: false` la app arranca
+/// como al abrirla: lee el refresh de [almacen] (vacío = pantalla de login).
+Widget appDePrueba(
+  ApiService api, {
+  String inicial = Rutas.estudiantes,
+  bool conSesion = true,
+  AlmacenRefresh? almacen,
+}) => ProviderScope(
+  retry: sinReintentos,
+  overrides: [
+    apiServiceProvider.overrideWithValue(api),
+    almacenRefreshProvider.overrideWithValue(almacen ?? AlmacenEnMemoria()),
+    if (conSesion)
+      sesionProvider.overrideWith(
+        (ref) => crearSesion(ref, tokens: tokensDePrueba()),
+      ),
+    routerProvider.overrideWith((ref) {
+      final router = crearRouter(
+        sesion: ref.watch(sesionProvider),
+        inicial: inicial,
+      );
+      ref.onDispose(router.dispose);
+      return router;
+    }),
+  ],
+  child: const EstudiantesApp(),
+);

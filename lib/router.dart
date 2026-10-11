@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'models/estudiante.dart';
 import 'providers.dart';
 import 'screens/estudiante_detalle_screen.dart';
+import 'screens/acceso_screen.dart';
 import 'screens/estudiantes_screen.dart';
 import 'screens/graficas_screen.dart';
 import 'screens/prediccion_screen.dart';
+import 'services/sesion.dart';
 import 'widgets/estado_vistas.dart';
 
 /// Rutas de la app. En la web van detrás de `#` (`/#/graficas`): GitHub Pages
@@ -16,27 +18,95 @@ abstract final class Rutas {
   static const estudiantes = '/estudiantes';
   static const graficas = '/graficas';
   static const prediccion = '/prediccion';
+  static const login = '/login';
+  static const registro = '/registro';
+
+  /// Mientras se recupera la sesión guardada al arrancar.
+  static const cargando = '/cargando';
 
   static String estudiante(int id) => '$estudiantes/$id';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final router = crearRouter();
+  final router = crearRouter(sesion: ref.watch(sesionProvider));
   ref.onDispose(router.dispose);
   return router;
 });
+
+/// A dónde llevar según el estado de la [sesion]. Sin sesión, todo lleva al
+/// login; la ruta pedida se guarda en `?desde=` para volver a ella después.
+String? redirigir(GestorSesion sesion, GoRouterState state) {
+  final ruta = state.matchedLocation;
+  final enAcceso = ruta == Rutas.login || ruta == Rutas.registro;
+  final desde = _rutaInterna(state.uri.queryParameters['desde']);
+  final pedida = state.uri.toString();
+
+  String con(String destino, String? volverA) => volverA == null
+      ? destino
+      : Uri(path: destino, queryParameters: {'desde': volverA}).toString();
+
+  return switch (sesion.estado) {
+    EstadoSesion.restaurando =>
+      ruta == Rutas.cargando ? null : con(Rutas.cargando, pedida),
+    EstadoSesion.sinSesion when enAcceso => null,
+    EstadoSesion.sinSesion => con(
+      Rutas.login,
+      ruta == Rutas.cargando ? desde : pedida,
+    ),
+    EstadoSesion.conSesion when enAcceso || ruta == Rutas.cargando =>
+      desde ?? Rutas.estudiantes,
+    EstadoSesion.conSesion => null,
+  };
+}
+
+/// Solo rutas de la propia app (`/algo`), nunca `//otro-sitio` ni URLs
+/// completas.
+String? _rutaInterna(String? ruta) =>
+    ruta != null &&
+        ruta.startsWith('/') &&
+        !ruta.startsWith('//') &&
+        !ruta.startsWith(Rutas.login) &&
+        !ruta.startsWith(Rutas.registro) &&
+        !ruta.startsWith(Rutas.cargando)
+    ? ruta
+    : null;
 
 /// Una rama por pestaña. `StatefulShellRoute.indexedStack` conserva cada
 /// pestaña al cambiar (como el IndexedStack de antes), pero solo construye
 /// una rama la primera vez que se visita: al arrancar se pide únicamente lo
 /// de la pestaña visible.
-GoRouter crearRouter({String inicial = Rutas.estudiantes}) {
+GoRouter crearRouter({
+  required GestorSesion sesion,
+  String inicial = Rutas.estudiantes,
+}) {
   final raiz = GlobalKey<NavigatorState>(debugLabel: 'raiz');
   return GoRouter(
     navigatorKey: raiz,
     initialLocation: inicial,
+    // Cada cambio de sesión (login, logout, sesión revocada) vuelve a
+    // evaluar redirect.
+    refreshListenable: sesion,
+    redirect: (_, state) => redirigir(sesion, state),
     routes: [
       GoRoute(path: '/', redirect: (_, _) => Rutas.estudiantes),
+      GoRoute(
+        path: Rutas.cargando,
+        builder: (_, _) => const CargandoSesionScreen(),
+      ),
+      GoRoute(
+        path: Rutas.login,
+        builder: (_, state) => AccesoScreen(
+          modo: ModoAcceso.login,
+          desde: state.uri.queryParameters['desde'],
+        ),
+      ),
+      GoRoute(
+        path: Rutas.registro,
+        builder: (_, state) => AccesoScreen(
+          modo: ModoAcceso.registro,
+          desde: state.uri.queryParameters['desde'],
+        ),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => InicioPage(shell: shell),
         branches: [

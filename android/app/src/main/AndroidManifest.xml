@@ -4,13 +4,17 @@
          podría hablar con la API. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
-    <!-- networkSecurityConfig: en release solo se permite HTTPS; en debug
+    <!-- allowBackup="false": la copia automática de Android (Google Drive) no
+         debe llevarse el refresh token, y además la clave que lo cifra no
+         viaja con ella (flutter_secure_storage fallaría al restaurar).
+         networkSecurityConfig: en release solo se permite HTTPS; en debug
          también http:// para la API local (ver res/xml/ en src/main y
          src/debug). -->
     <application
         android:label="Estudiantes"
         android:name="${applicationName}"
         android:networkSecurityConfig="@xml/network_security_config"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

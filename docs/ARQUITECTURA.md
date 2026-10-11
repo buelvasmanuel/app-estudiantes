@@ -202,3 +202,8 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
 - **ApiService**: `PeticionApi` (método, ruta, cuerpo, cabeceras) e
   `InterceptorApi` (`antesDeEnviar`, `reintentar` como máximo una vez);
   métodos `get/post/put/patch/delete` y `enviar` (resuelve la deuda 1).
+- **Sesión** (contrato `api-tienda/docs/CONTRATO_AUTH.md` v1): `GestorSesion`
+  (interceptor con un solo refresh en curso), `AlmacenRefresh`
+  (`flutter_secure_storage` 11.2 en móvil/escritorio, memoria en web),
+  pantallas de login/registro y redirección del router según la sesión.
+  Android con `allowBackup="false"`. Linux necesita `libsecret`.

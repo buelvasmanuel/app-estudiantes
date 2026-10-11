@@ -7,6 +7,7 @@ import '../providers.dart';
 import '../router.dart';
 import '../services/api_service.dart';
 import '../widgets/estado_vistas.dart';
+import '../widgets/menu_cuenta.dart';
 import '../widgets/promedio_badge.dart';
 
 /// Pestaña 1: listado de estudiantes con buscador, filtro y pull-to-refresh.
@@ -63,6 +64,7 @@ class _EstudiantesScreenState extends ConsumerState<EstudiantesScreen> {
               onPressed: _actualizar,
               icon: const Icon(Icons.refresh_rounded),
             ),
+          const MenuCuenta(),
         ],
       ),
       body: switch (estado) {

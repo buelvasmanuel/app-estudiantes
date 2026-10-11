@@ -5,6 +5,7 @@ import '../models/estadistica.dart';
 import '../providers.dart';
 import '../services/api_service.dart';
 import '../widgets/estado_vistas.dart';
+import '../widgets/menu_cuenta.dart';
 import '../widgets/grafica_barras.dart';
 
 /// Pestaña 2: estadísticas de los estudiantes en una gráfica de barras.
@@ -51,6 +52,7 @@ class _GraficasScreenState extends ConsumerState<GraficasScreen> {
             onPressed: _actualizar,
             icon: const Icon(Icons.refresh_rounded),
           ),
+          const MenuCuenta(),
         ],
       ),
       body: RefreshIndicator(

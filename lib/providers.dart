@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'models/estadistica.dart';
 import 'models/estudiante.dart';
 import 'models/prediccion.dart';
+import 'models/sesion.dart';
+import 'services/almacen_refresh.dart';
 import 'services/api_service.dart';
+import 'services/sesion.dart';
 
 /// El único [ApiService] de la app. Los tests lo sustituyen con
 /// `apiServiceProvider.overrideWithValue(apiFalsa(...))`.
@@ -12,6 +15,33 @@ final apiServiceProvider = Provider<ApiService>((ref) {
   ref.onDispose(api.cerrar);
   return api;
 });
+
+/// Dónde se guarda el refresh token (seguro en móvil/escritorio, memoria en
+/// la web).
+final almacenRefreshProvider = Provider<AlmacenRefresh>(
+  (ref) => AlmacenRefresh.dePlataforma(),
+);
+
+/// La sesión del usuario. Se registra como interceptor del [ApiService] y, si
+/// no se le pasan [Tokens], intenta recuperar la sesión guardada.
+final sesionProvider = Provider<GestorSesion>((ref) => crearSesion(ref));
+
+/// Lo usan [sesionProvider] y los tests (con [tokens] = sesión ya iniciada).
+GestorSesion crearSesion(Ref ref, {Tokens? tokens}) {
+  final api = ref.watch(apiServiceProvider);
+  final sesion = GestorSesion(
+    api: api,
+    almacen: ref.watch(almacenRefreshProvider),
+    tokens: tokens,
+  );
+  api.interceptores.add(sesion);
+  ref.onDispose(() {
+    api.interceptores.remove(sesion);
+    sesion.dispose();
+  });
+  if (sesion.estado == EstadoSesion.restaurando) sesion.restaurar();
+  return sesion;
+}
 
 /// Sin reintentos automáticos.
 ///

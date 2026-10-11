@@ -6,6 +6,7 @@ import '../providers.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import '../widgets/estado_vistas.dart';
+import '../widgets/menu_cuenta.dart';
 
 /// Pestaña 3: formulario que pide al modelo de la API si un estudiante con
 /// esos datos estaría en riesgo académico.
@@ -80,7 +81,10 @@ class _PrediccionScreenState extends ConsumerState<PrediccionScreen> {
       }
     });
     return Scaffold(
-      appBar: AppBar(title: const Text('Predicción de riesgo')),
+      appBar: AppBar(
+        title: const Text('Predicción de riesgo'),
+        actions: const [MenuCuenta()],
+      ),
       body: switch (ref.watch(metricasProvider)) {
         AsyncValue(value: final MetricasModelo m) => _contenido(m),
         AsyncValue(:final error?) => ErrorVista(

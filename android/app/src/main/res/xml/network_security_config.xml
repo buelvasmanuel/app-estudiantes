@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Release y profile: solo HTTPS. Los tokens de sesión nunca deben viajar
+     sin cifrar. La versión de debug (src/debug/res/xml/) sustituye a esta. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

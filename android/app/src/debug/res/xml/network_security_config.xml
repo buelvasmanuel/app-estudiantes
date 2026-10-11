@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Solo en debug (flutter run): permite http:// para la API local, ya sea
+     por el emulador (10.0.2.2), por adb reverse (127.0.0.1) o por la WiFi
+     (192.168.x.y, una IP que no se puede fijar aquí de antemano). Gradle usa
+     este archivo en lugar del de src/main al compilar en debug; los APK de
+     release no lo incluyen. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

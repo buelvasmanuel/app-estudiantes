@@ -4,13 +4,13 @@
          podría hablar con la API. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
-    <!-- usesCleartextTraffic: desde Android 9 se bloquea HTTP sin cifrar
-         (http://). Nuestra API de clase no usa HTTPS, así que lo permitimos.
-         Solo para desarrollo: en producción la API debería ir con https://. -->
+    <!-- networkSecurityConfig: en release solo se permite HTTPS; en debug
+         también http:// para la API local (ver res/xml/ en src/main y
+         src/debug). -->
     <application
         android:label="Estudiantes"
         android:name="${applicationName}"
-        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

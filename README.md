@@ -145,23 +145,30 @@ La URL se decide en `lib/config.dart`:
 `String.fromEnvironment('API_URL')` se resuelve **al compilar**: si cambias
 la URL hay que volver a lanzar `flutter run` (el *hot reload* no basta).
 
-## Android: `INTERNET` y `usesCleartextTraffic`
+## Android: `INTERNET` y `networkSecurityConfig`
 
 En `android/app/src/main/AndroidManifest.xml`:
 
 ```xml
 <uses-permission android:name="android.permission.INTERNET"/>
-<application android:usesCleartextTraffic="true" ...>
+<application android:networkSecurityConfig="@xml/network_security_config" ...>
 ```
 
 - **`INTERNET`**: sin este permiso Android no deja que la app abra conexiones
   de red. En modo *debug* Flutter lo añade por su cuenta, pero en *release*
   (`flutter build apk`) la app no podría hablar con la API si faltara.
-- **`usesCleartextTraffic="true"`**: desde Android 9 se bloquea por defecto el
-  tráfico HTTP **sin cifrar** (`http://`, sin la *s*). Nuestra API de clase no
-  tiene HTTPS, así que lo permitimos. **Solo para desarrollo**: en producción la
-  API debería ir por `https://` y esta línea debería quitarse (o limitarse a un
-  dominio con un `network_security_config`).
+- **`networkSecurityConfig`**: desde Android 9 se bloquea por defecto el
+  tráfico HTTP **sin cifrar** (`http://`, sin la *s*). Hay dos versiones del
+  archivo y Gradle elige una según el modo de compilación:
+
+  | Archivo | Se usa en | HTTP sin cifrar |
+  |---|---|---|
+  | `src/main/res/xml/network_security_config.xml` | release y profile (el APK que se publica) | **No**: solo `https://` (la API de Render) |
+  | `src/debug/res/xml/network_security_config.xml` | debug (`flutter run`) | Sí: para la API local (emulador, `adb reverse` o WiFi) |
+
+  Así ningún token de sesión viaja sin cifrar en el APK publicado. Por eso un
+  APK de release **no** funciona contra `http://192.168.x.y:8000`: para
+  probar con la API local usa `flutter run` (debug).
 
 ## Estructura
 

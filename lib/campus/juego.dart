@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
+import '../tema/temas.dart';
 import '../theme.dart';
 import 'controlador.dart';
 import 'disposicion.dart';
@@ -25,20 +26,40 @@ class PaletaCampus {
     required this.rayaRiesgo,
     required this.texto,
     required this.textoSecundario,
+    required this.bordeMuestra,
+    this.brillo = false,
+    this.grosorContorno = 1,
   });
 
   factory PaletaCampus.de(ThemeData tema) {
     final c = tema.colorScheme;
-    final estado = tema.extension<ColoresEstado>() ?? ColoresEstado.claro;
-    final fachada = c.surfaceContainerHighest;
+    final estado = tema.extension<ColoresEstado>() ?? ColoresEstado.expediente;
+    final estilo = tema.extension<EstiloJuego>() ?? const EstiloJuego();
+    final noche = estilo.fondoCampus == FondoCampus.noche;
+    final papel = estilo.fondoCampus == FondoCampus.papel;
+    final fachada = noche
+        ? const Color(0xFF2A3156)
+        : papel
+        ? c.surfaceContainerLowest
+        : c.surfaceContainerHighest;
     return PaletaCampus(
-      fondo: c.surface,
+      // Con fondo ilustrado, el juego deja ver el fondo de Flutter.
+      fondo: estilo.fondoCampus == FondoCampus.liso
+          ? c.surface
+          : Colors.transparent,
       fachada: fachada,
-      lateral: Color.lerp(fachada, Colors.black, 0.18)!,
-      tejado: Color.lerp(fachada, Colors.white, 0.3)!,
-      contorno: c.outlineVariant,
+      lateral: Color.lerp(fachada, Colors.black, papel ? 0.1 : 0.18)!,
+      tejado: Color.lerp(fachada, Colors.white, papel ? 0.0 : 0.3)!,
+      contorno: papel ? c.onSurface : c.outlineVariant,
       seleccion: c.primary,
-      vacia: c.onSurface.withValues(alpha: 0.1),
+      vacia: noche
+          ? const Color(0xFF151A36)
+          : papel
+          ? c.surfaceContainerHigh
+          : c.onSurface.withValues(alpha: 0.1),
+      bordeMuestra: c.onSurfaceVariant,
+      brillo: estilo.ventanasConBrillo,
+      grosorContorno: estilo.contornoTinta ? 1.6 : 1,
       ok: estado.ok,
       riesgo: estado.riesgo,
       rayaRiesgo: estado.onRiesgo,
@@ -60,6 +81,15 @@ class PaletaCampus {
   final Color texto;
   final Color textoSecundario;
 
+  /// Borde de las muestras de la leyenda: garantiza ≥ 3:1 con el fondo
+  /// aunque la ventana vacía casi no contraste (en Expediente, papel sobre
+  /// papel).
+  final Color bordeMuestra;
+
+  /// Las ventanas encendidas brillan (tema Noche).
+  final bool brillo;
+  final double grosorContorno;
+
   @override
   bool operator ==(Object other) =>
       other is PaletaCampus &&
@@ -68,7 +98,9 @@ class PaletaCampus {
       other.seleccion == seleccion &&
       other.ok == ok &&
       other.riesgo == riesgo &&
-      other.texto == texto;
+      other.texto == texto &&
+      other.brillo == brillo &&
+      other.vacia == vacia;
 
   @override
   int get hashCode => Object.hash(fondo, fachada, seleccion, ok, riesgo, texto);
@@ -186,7 +218,7 @@ class _PintorCampus extends Component with HasGameReference<CampusJuego> {
     const fy = Medidas.fondoY;
     final contorno = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = px
+      ..strokeWidth = px * _p.grosorContorno
       ..color = _p.contorno;
 
     final lateral = Path()
@@ -212,6 +244,10 @@ class _PintorCampus extends Component with HasGameReference<CampusJuego> {
     final vacia = Paint()..color = _p.vacia;
     final ok = Paint()..color = _p.ok.withValues(alpha: _alfaSinRiesgo);
     final riesgo = Paint()..color = _p.riesgo;
+    // Halo de las ventanas encendidas (identidad "noche").
+    final halo = _p.brillo
+        ? (Paint()..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3))
+        : null;
     final raya = Paint()
       ..color = _p.rayaRiesgo
       ..strokeWidth = 1.4
@@ -224,7 +260,18 @@ class _PintorCampus extends Component with HasGameReference<CampusJuego> {
         final estudiante = h < piso.length ? piso[h] : null;
         if (estudiante == null || !encendido) {
           canvas.drawRect(v, vacia);
-        } else if (estudiante.enRiesgo) {
+          continue;
+        }
+        if (halo != null) {
+          final color = estudiante.enRiesgo
+              ? _p.riesgo
+              : _p.ok.withValues(alpha: _alfaSinRiesgo);
+          canvas.drawRect(
+            v.inflate(1.5),
+            halo..color = color.withValues(alpha: color.a * 0.55),
+          );
+        }
+        if (estudiante.enRiesgo) {
           // Franja diagonal: el riesgo se distingue también sin color.
           canvas
             ..drawRect(v, riesgo)

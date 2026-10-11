@@ -12,6 +12,7 @@ import 'dart:ui' as ui;
 import 'package:app_estudiantes/laboratorio/providers.dart';
 import 'package:app_estudiantes/laboratorio/rescate.dart';
 import 'package:app_estudiantes/main.dart';
+import 'package:app_estudiantes/preferencias.dart';
 import 'package:app_estudiantes/providers.dart';
 import 'package:app_estudiantes/screens/acceso_screen.dart';
 import 'package:app_estudiantes/screens/rescate_screen.dart';
@@ -24,6 +25,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'app_real.dart';
 import 'app_real_test.dart' show esperarA;
 
 const _alias = String.fromEnvironment('ALIAS');
@@ -75,6 +77,7 @@ void main() {
         child: ProviderScope(
           retry: sinReintentos,
           overrides: [
+            preferenciasProvider.overrideWithValue(preferenciasDePrueba()),
             almacenRefreshProvider.overrideWithValue(AlmacenEnMemoria()),
           ],
           child: const EstudiantesApp(),

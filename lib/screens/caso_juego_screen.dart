@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../juego/celebracion.dart';
 import '../juego/juego_api.dart';
+import '../tema/temas.dart';
 import '../juego/modelo.dart';
 import '../laboratorio/apariencia.dart';
 import '../models/estadistica.dart';
 import '../providers.dart';
 import '../router.dart';
 import '../services/api_service.dart';
+import '../sonidos.dart';
 import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
@@ -48,6 +50,9 @@ class _CasoJuegoScreenState extends ConsumerState<CasoJuegoScreen> {
         _respuesta = r;
         _respondida = elegida;
       });
+      ref
+          .read(sonidosProvider)
+          .tocar(r.correcto ? Sonido.acierto : Sonido.pista);
       progresoCambiado(ref);
       ref.invalidate(casoJuegoProvider(widget.codigo));
       await celebrar(context, r.recompensa);
@@ -136,12 +141,14 @@ class _CasoJuegoScreenState extends ConsumerState<CasoJuegoScreen> {
                 runSpacing: 8,
                 children: [
                   for (final o in caso.opciones)
-                    ChoiceChip(
-                      label: Text(o.texto),
-                      selected: _elegida == o.valor,
-                      onSelected: acertado
+                    OpcionCaso(
+                      key: Key('opcion-${o.valor}'),
+                      texto: o.texto,
+                      elegida: _elegida == o.valor,
+                      // Ya acertado: se ve cuál era, pero no se cambia.
+                      onTap: acertado
                           ? null
-                          : (_) => setState(() => _elegida = o.valor),
+                          : () => setState(() => _elegida = o.valor),
                     ),
                 ],
               ),
@@ -280,15 +287,20 @@ class _Veredicto extends ConsumerWidget {
     final r = respuesta;
     final apariencia = ref.watch(aparienciaLaboratorioProvider);
     final xp = r.recompensa.xpGanada;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Card.filled(
-          color: r.correcto ? estado.okContenedor : estado.riesgoContenedor,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    final sellos = EstiloJuego.of(context).sellos;
+    final tarjeta = Card.filled(
+      color: r.correcto ? estado.okContenedor : estado.riesgoContenedor,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // El sello va junto al título, en el mismo Wrap: si no caben en
+            // una línea (pantallas estrechas), el sello baja; nunca lo tapa.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
               children: [
                 Text(
                   r.correcto
@@ -302,28 +314,48 @@ class _Veredicto extends ConsumerWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (r.dato case final dato?) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    dato,
-                    style: TextStyle(
-                      color: r.correcto
-                          ? estado.onOkContenedor
-                          : estado.onRiesgoContenedor,
+                if (sellos && r.correcto)
+                  // Margen para el giro del sello: girado ocupa más alto que
+                  // su caja, y así nunca invade el título.
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 6,
+                    ),
+                    child: Sello(
+                      key: const Key('sello'),
+                      texto: 'RESUELTO',
+                      color: estado.ok,
                     ),
                   ),
-                ],
-                if (r.correcto && yaResuelto) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'Ya lo habías resuelto: esta vez no suma XP.',
-                    style: TextStyle(color: estado.onOkContenedor),
-                  ),
-                ],
               ],
             ),
-          ),
+            if (r.dato case final dato?) ...[
+              const SizedBox(height: 4),
+              Text(
+                dato,
+                style: TextStyle(
+                  color: r.correcto
+                      ? estado.onOkContenedor
+                      : estado.onRiesgoContenedor,
+                ),
+              ),
+            ],
+            if (r.correcto && yaResuelto) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Ya lo habías resuelto: esta vez no suma XP.',
+                style: TextStyle(color: estado.onOkContenedor),
+              ),
+            ],
+          ],
         ),
+      ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        tarjeta,
         if (r.explicacion ?? r.pista case final texto?) ...[
           const SizedBox(height: 12),
           Row(
@@ -349,5 +381,61 @@ class _Veredicto extends ConsumerWidget {
         ],
       ],
     );
+  }
+}
+
+/// Una opción de respuesta. La elegida se distingue en los dos temas por
+/// algo más que el color: borde grueso del color primario, ✓ y negrita.
+/// Sigue viéndose así cuando el caso ya está resuelto (no se "apaga").
+class OpcionCaso extends StatelessWidget {
+  const OpcionCaso({
+    super.key,
+    required this.texto,
+    required this.elegida,
+    required this.onTap,
+  });
+
+  final String texto;
+  final bool elegida;
+
+  /// `null`: no se puede cambiar (caso ya acertado).
+  final VoidCallback? onTap;
+
+  static const grosorElegida = 2.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final borde = elegida
+        ? BorderSide(color: c.primary, width: grosorElegida)
+        : BorderSide(color: c.outline);
+    final estilo = TextStyle(
+      color: elegida ? c.onPrimaryContainer : c.onSurface,
+      fontWeight: elegida ? FontWeight.w700 : FontWeight.w400,
+    );
+    final icono = elegida
+        ? Icon(Icons.check, size: 18, color: c.onPrimaryContainer)
+        : null;
+    final fondo = elegida ? c.primaryContainer : c.surface;
+    final chip = onTap == null
+        ? Chip(
+            avatar: icono,
+            label: Text(texto),
+            labelStyle: estilo,
+            backgroundColor: fondo,
+            side: borde,
+          )
+        : ChoiceChip(
+            label: Text(texto),
+            labelStyle: estilo,
+            selected: elegida,
+            showCheckmark: true,
+            checkmarkColor: c.onPrimaryContainer,
+            selectedColor: fondo,
+            backgroundColor: fondo,
+            side: borde,
+            onSelected: (_) => onTap!(),
+          );
+    return Semantics(selected: elegida, child: chip);
   }
 }

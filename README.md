@@ -1,10 +1,26 @@
-# Estudiantes
+# Campus Detective (app_estudiantes)
 
 App Flutter (Material 3) que consume la API FastAPI de `api-tienda`: un
 juego de datos («Campus Detective») con cinco pestañas, como en la
 arquitectura de la propuesta (Campus · Casos · Laboratorio · Datos · Perfil).
 **Datos** agrupa las tres herramientas originales (Estudiantes, Gráficas y
 Predicción), que se eligen con un selector en la barra superior.
+
+Tiene **dos temas** que elige el jugador (ver [Temas](#temas-noche-y-expediente)):
+arriba **Noche**, abajo **Expediente**.
+
+<p>
+  <img src="docs/capturas/noche/04_campus.png" width="180" alt="Campus (noche)">
+  <img src="docs/capturas/noche/06_caso_resuelto.png" width="180" alt="Caso resuelto (noche)">
+  <img src="docs/capturas/noche/08_rescate.png" width="180" alt="Rescate (noche)">
+  <img src="docs/capturas/noche/13_perfil.png" width="180" alt="Perfil (noche)">
+</p>
+<p>
+  <img src="docs/capturas/expediente/04_campus.png" width="180" alt="Campus (expediente)">
+  <img src="docs/capturas/expediente/06_caso_resuelto.png" width="180" alt="Caso resuelto (expediente)">
+  <img src="docs/capturas/expediente/08_rescate.png" width="180" alt="Rescate (expediente)">
+  <img src="docs/capturas/expediente/13_perfil.png" width="180" alt="Perfil (expediente)">
+</p>
 
 | Pestaña | Qué hace | Endpoints |
 |---|---|---|
@@ -16,12 +32,6 @@ Predicción), que se eligen con un selector en la barra superior.
 | **Datos → Predicción** | Formulario (carrera + 4 sliders) que predice el riesgo académico, con el resultado en rojo/verde y las métricas del modelo | `GET /prediccion/metricas`, `POST /prediccion/riesgo` |
 | **Perfil** | Nivel, XP y avance, racha, casos, rescates, estrellas e insignias; ranking semanal e histórico. Los docentes entran desde aquí a su panel | `/juego/progreso`, `/juego/ranking` |
 
-<p>
-  <img src="docs/capturas/1_estudiantes.png" width="200" alt="Listado de estudiantes">
-  <img src="docs/capturas/3_grafica_por_carrera.png" width="200" alt="Gráfica por carrera">
-  <img src="docs/capturas/5_prediccion_en_riesgo.png" width="200" alt="Predicción en riesgo">
-  <img src="docs/capturas/6_sobre_el_modelo.png" width="200" alt="Métricas del modelo">
-</p>
 
 ## Pruébala ya (versión en la nube)
 
@@ -66,9 +76,16 @@ firma de depuración).
   [`flutter_riverpod`](https://pub.dev/packages/flutter_riverpod),
   [`go_router`](https://pub.dev/packages/go_router) y
   [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage).
-- **Linux**: `libsecret` (guarda la sesión en el llavero del sistema):
-  `sudo apt install libsecret-1-dev` (Ubuntu/Debian) o
-  `sudo pacman -S libsecret` (Arch).
+- **Linux**: `libsecret` (guarda la sesión en el llavero del sistema) y
+  GStreamer con sus plugins *base* y *good* (sonidos: leer MP3 y sacarlos por
+  el altavoz):
+  - Arch: `sudo pacman -S libsecret gstreamer gst-plugins-base gst-plugins-good`
+  - Ubuntu/Debian: `sudo apt install libsecret-1-dev libgstreamer1.0-dev
+    libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base
+    gstreamer1.0-plugins-good`
+- **Windows**: nada extra para el sonido (Media Foundation reproduce MP3). En
+  las ediciones **N** de Windows hay que instalar el *Media Feature Pack*.
+- **Android y web**: nada extra.
 
 ```bash
 flutter pub get
@@ -214,7 +231,10 @@ lib/
 │   ├── disposicion.dart       # Geometría, cámara (Vista) y qué hay bajo un toque
 │   ├── controlador.dart       # Estado compartido entre la interfaz y Flame
 │   └── juego.dart             # Dibujo con Flame (solo dibuja)
-├── theme.dart                 # Tema M3 claro/oscuro + colores de riesgo/ok
+├── theme.dart                 # ColoresEstado: rojo/verde de riesgo de cada tema
+├── tema/temas.dart            # Temas Noche y Expediente (+ fondo del campus, sello)
+├── preferencias.dart          # Tema, sonidos y tutorial guardados en el dispositivo
+├── sonidos.dart               # Efectos opcionales (apagados por defecto)
 ├── models/
 │   ├── json_utils.dart        # Lectura segura de JSON (num, String, bool...)
 │   ├── estudiante.dart
@@ -227,6 +247,7 @@ lib/
 │   └── almacen_refresh.dart   # Dónde se guarda el refresh token
 ├── screens/
 │   ├── acceso_screen.dart     # Login, registro y "recuperando sesión"
+│   ├── tutorial_screen.dart   # Tutorial del búho (la primera vez)
 │   ├── campus_screen.dart     # Leyenda, mapa, lista de edificios y paneles
 │   ├── casos_screen.dart      # Casos por nivel
 │   ├── caso_juego_screen.dart # Un caso: ficha, opciones y veredicto
@@ -297,23 +318,37 @@ flutter test integration_test/auth_real_test.dart -d linux \
   --dart-define=ALIAS=Prueba_Frontend_1 --dart-define=PASSWORD='una contraseña larga'
 ```
 
+Los sonidos reales de la plataforma (en Linux, GStreamer; si faltan plugins
+dice cuáles y cómo instalarlos, y se salta si el equipo no tiene salida de
+audio):
+
+```bash
+flutter test integration_test/sonidos_test.dart -d linux
+```
+
 El almacén seguro real de la plataforma (en Linux, libsecret) se prueba con:
 
 ```bash
 flutter test integration_test/almacen_seguro_test.dart -d linux
 ```
 
-Para regenerar las capturas de `docs/capturas/` (tamaño celular, datos reales):
+Para regenerar las capturas de `docs/capturas/<tema>/` (412×915, datos reales;
+recorre acceso, tutorial, campus, casos, laboratorio, datos y perfil):
 
 ```bash
-flutter test integration_test/capturas_test.dart -d linux \
-  --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
+for tema in noche expediente; do
+  flutter test integration_test/capturas_test.dart -d linux \
+    --dart-define=TEMA=$tema --dart-define=API_URL=http://127.0.0.1:8001 \
+    --dart-define=ALIAS=… --dart-define=PASSWORD=… \
+    --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
+done
 ```
 
 ## Problemas típicos
 
 | Síntoma | Causa y solución |
 |---|---|
+| En Linux los sonidos no suenan (en la consola: `LinuxAudioError … gst-stream-error-quark`) | Faltan plugins de GStreamer para leer MP3: Arch `sudo pacman -S gst-plugins-base gst-plugins-good`, Ubuntu `sudo apt install gstreamer1.0-plugins-base gstreamer1.0-plugins-good`. `flutter test integration_test/sonidos_test.dart -d linux` dice exactamente qué falta. La app sigue funcionando sin sonido. |
 | "Sin conexión con la API" | La API no está corriendo, o no escucha en `0.0.0.0`, o la URL no es la correcta para ese dispositivo (ver tabla de arriba). |
 | Funciona en Linux pero no en el celular | Falta `adb reverse tcp:8000 tcp:8000` (USB) o la IP/cortafuegos (WiFi). |
 | "Servicio no disponible (503): Modelo no entrenado" | En la API: `python -m scripts.entrenar_modelo`. |
@@ -339,9 +374,8 @@ mostrar nada. Implementa el contrato `docs/CONTRATO_AUTH.md` del repo
 ## Campus
 
 <p>
-  <img src="docs/capturas/7_campus.png" width="200" alt="Campus">
-  <img src="docs/capturas/8_campus_expediente.png" width="200" alt="Expediente de una carrera">
-  <img src="docs/capturas/9_campus_estudiante.png" width="200" alt="Ficha de un estudiante">
+  <img src="docs/capturas/noche/04_campus.png" width="200" alt="Campus (noche)">
+  <img src="docs/capturas/expediente/04_campus.png" width="200" alt="Campus (expediente)">
 </p>
 
 - **Lectura:** edificio = carrera (ordenados de más a menos estudiantes), piso
@@ -378,9 +412,14 @@ flutter test integration_test/campus_test.dart -d linux \
 ## Laboratorio de rescate
 
 <p>
-  <img src="docs/capturas/10_laboratorio.png" width="200" alt="Casos del laboratorio">
-  <img src="docs/capturas/11_rescate.png" width="200" alt="Rescate en curso">
-  <img src="docs/capturas/12_resultado.png" width="200" alt="Resultado y explicación">
+  <img src="docs/capturas/noche/07_laboratorio.png" width="180" alt="Casos del laboratorio (noche)">
+  <img src="docs/capturas/noche/08_rescate.png" width="180" alt="Rescate en curso (noche)">
+  <img src="docs/capturas/noche/09_resultado.png" width="180" alt="Resultado y explicación (noche)">
+</p>
+<p>
+  <img src="docs/capturas/expediente/07_laboratorio.png" width="180" alt="Casos del laboratorio (expediente)">
+  <img src="docs/capturas/expediente/08_rescate.png" width="180" alt="Rescate en curso (expediente)">
+  <img src="docs/capturas/expediente/09_resultado.png" width="180" alt="Resultado y explicación (expediente)">
 </p>
 
 Implementa `docs/CONTRATO_LABORATORIO.md` (repo `api-tienda`):
@@ -417,10 +456,16 @@ flutter test integration_test/laboratorio_real_test.dart -d linux \
 ## Casos, progresión y panel del docente
 
 <p>
-  <img src="docs/capturas/13_casos.png" width="200" alt="Lista de casos">
-  <img src="docs/capturas/15_caso_resuelto.png" width="200" alt="Caso resuelto con su explicación">
-  <img src="docs/capturas/16_perfil.png" width="200" alt="Perfil con insignias">
-  <img src="docs/capturas/17_ranking.png" width="200" alt="Ranking">
+  <img src="docs/capturas/noche/05_casos.png" width="180" alt="Lista de casos (noche)">
+  <img src="docs/capturas/noche/06_caso_resuelto.png" width="180" alt="Caso resuelto (noche)">
+  <img src="docs/capturas/noche/14_perfil_insignias.png" width="180" alt="Perfil con insignias (noche)">
+  <img src="docs/capturas/noche/15_ranking.png" width="180" alt="Ranking (noche)">
+</p>
+<p>
+  <img src="docs/capturas/expediente/05_casos.png" width="180" alt="Lista de casos (expediente)">
+  <img src="docs/capturas/expediente/06_caso_resuelto.png" width="180" alt="Caso resuelto (expediente)">
+  <img src="docs/capturas/expediente/14_perfil_insignias.png" width="180" alt="Perfil con insignias (expediente)">
+  <img src="docs/capturas/expediente/15_ranking.png" width="180" alt="Ranking (expediente)">
 </p>
 
 Implementa `docs/CONTRATO_JUEGO.md` v1 y `CONTRATO_LABORATORIO.md` v1.1:
@@ -456,6 +501,56 @@ flutter test integration_test/juego_real_test.dart -d linux \
   --dart-define=ALIAS_DOCENTE=… --dart-define=PASSWORD_DOCENTE=… \
   --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
 ```
+
+## Temas: Noche y Expediente
+
+<p>
+  <img src="docs/capturas/noche/01_acceso.png" width="180" alt="Acceso (noche)">
+  <img src="docs/capturas/noche/03_tutorial_eleccion.png" width="180" alt="Tutorial: elegir estilo (noche)">
+  <img src="docs/capturas/noche/11_datos_graficas.png" width="180" alt="Gráficas (noche)">
+  <img src="docs/capturas/noche/12_datos_prediccion.png" width="180" alt="Predicción (noche)">
+</p>
+<p>
+  <img src="docs/capturas/expediente/01_acceso.png" width="180" alt="Acceso (expediente)">
+  <img src="docs/capturas/expediente/03_tutorial_eleccion.png" width="180" alt="Tutorial: elegir estilo (expediente)">
+  <img src="docs/capturas/expediente/11_datos_graficas.png" width="180" alt="Gráficas (expediente)">
+  <img src="docs/capturas/expediente/12_datos_prediccion.png" width="180" alt="Predicción (expediente)">
+</p>
+
+| | **Noche** | **Expediente** |
+|---|---|---|
+| Idea | Campus nocturno con ventanas encendidas | Carpeta de casos de detective: papel, tinta y sellos |
+| Letra | **Fredoka** (títulos) + **Nunito** (texto) | **Courier Prime** (títulos) + **Atkinson Hyperlegible** (texto, pensada para baja visión) |
+| Fondo | Cielo con estrellas fijas y luna; ventanas con halo | Cuadrícula de plano; edificios con contorno de tinta; sello «RESUELTO» |
+
+- **Cómo se elige:** en el menú de la cuenta (🌙 / 📁), en el Perfil
+  (*Ajustes → Tema*) o al final del tutorial. La primera vez sigue al sistema
+  (oscuro → Noche, claro → Expediente). Se recuerda en el dispositivo
+  (`shared_preferences`; en la web, `localStorage`).
+- **El cambio** es un fundido de 250 ms, instantáneo con "reducir movimiento".
+- **Lo que no cambia:** rojo con raya diagonal = en riesgo, verde = sin riesgo,
+  en los dos temas.
+- **Contraste:** `test/temas_test.dart` comprueba en los dos temas los pares
+  de colores clave con la fórmula WCAG (≥ 4,5 el texto, ≥ 3 los elementos
+  gráficos: ventanas, bordes, la leyenda, el sello).
+- **Fuentes** incluidas en la app (`assets/fuentes/`, licencia SIL OFL 1.1 con
+  su `OFL.txt`): funciona sin conexión y no depende de Google en tiempo de
+  ejecución.
+
+### Tutorial del búho
+
+La primera vez que se entra en un dispositivo: 4 pasos (¡hola!, el campus, casos
+y rescates, «el modelo estima, no adivina»), y en el último se elige el tema y
+si se activan los sonidos. «Saltar» siempre visible. Se puede volver a ver desde
+el Perfil.
+
+### Sonidos
+
+Cinco efectos cortos (acierto, pista, poner una ficha, rescate logrado y
+celebración; 0,01-0,5 s), **apagados por defecto** en web y móvil: se activan en
+el Perfil o al final del tutorial. Son de [Kenney](https://kenney.nl) con
+licencia **CC0** (comprobada en el `License.txt` de cada pack; ver
+`assets/sonidos/LICENCIA.txt`).
 
 ## Detalles técnicos que vale la pena conocer
 

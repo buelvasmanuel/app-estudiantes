@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../juego/juego_api.dart';
 import '../models/sesion.dart';
+import '../preferencias.dart';
 import '../providers.dart';
 import '../router.dart';
 import '../services/api_service.dart';
+import '../tema/temas.dart';
 
-enum _Opcion { perfil, docente, cerrar, cerrarTodas }
+enum _Opcion { tema, perfil, docente, cerrar, cerrarTodas }
 
 /// Botón de la cuenta (en la barra superior de cada pestaña): muestra el
 /// alias y permite cerrar la sesión.
@@ -23,6 +25,8 @@ class MenuCuenta extends ConsumerWidget {
 
     Future<void> elegir(_Opcion opcion) async {
       switch (opcion) {
+        case _Opcion.tema:
+          ref.read(temaProvider.notifier).alternar();
         case _Opcion.perfil:
           context.go(Rutas.perfil);
         case _Opcion.docente:
@@ -63,6 +67,10 @@ class MenuCuenta extends ConsumerWidget {
     }
 
     final esDocente = usuario.rol == Rol.docente || usuario.rol == Rol.admin;
+    // El tema al que se cambia (Noche ↔ Expediente).
+    final otro = ref.watch(temaProvider) == TemaJuego.noche
+        ? TemaJuego.expediente
+        : TemaJuego.noche;
     final menu = PopupMenuButton<_Opcion>(
       tooltip: 'Cuenta',
       icon: CircleAvatar(
@@ -80,6 +88,18 @@ class MenuCuenta extends ConsumerWidget {
           ),
         ),
         const PopupMenuDivider(),
+        PopupMenuItem(
+          key: const Key('menu-tema'),
+          value: _Opcion.tema,
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Text(
+              otro == TemaJuego.noche ? '🌙' : '📁',
+              style: const TextStyle(fontSize: 20),
+            ),
+            title: Text('Tema ${otro.nombre}'),
+          ),
+        ),
         const PopupMenuItem(
           value: _Opcion.perfil,
           child: ListTile(

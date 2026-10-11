@@ -123,8 +123,16 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 Con el venv activado el prompt empieza por **`(venv)`**.
 
-En `.env` basta con que `DB_PASSWORD` coincida con la del `CREATE USER`
-(si se usó la del ejemplo, no hay que cambiar nada):
+En `.env` hay que revisar dos cosas:
+
+1. `DB_PASSWORD` debe coincidir con la del `CREATE USER` (si se usó la del
+   ejemplo, no hay que cambiarla).
+2. `CLAVE_TOKENS` (la clave de las sesiones de usuario) debe tener una clave
+   propia. Se genera con este comando y se pega en lugar del texto de ejemplo:
+
+   ```bash
+   python -m scripts.generar_clave
+   ```
 
 ```ini
 DB_USER=tienda_user
@@ -132,7 +140,12 @@ DB_PASSWORD=tienda_pass_123
 DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=tienda_db
+CLAVE_TOKENS=(la salida de generar_clave)
+CORS_ORIGINS=*
 ```
+
+Si falta o es incorrecta, la API no arranca y dice
+`CLAVE_TOKENS debe tener 32 bytes (python -m scripts.generar_clave)`.
 
 ### 4. Preparar los datos
 
@@ -145,6 +158,12 @@ python -m scripts.entrenar_modelo
 ```
 
 1. Crea las tablas. 2. Inserta 300 estudiantes de prueba. 3. Entrena el modelo de riesgo (`modelos/riesgo.joblib`).
+
+Opcional: para crear, modificar o borrar estudiantes desde `/docs` hace falta
+un usuario **admin** (leer no lo necesita). Se crea con
+`python -m scripts.crear_usuario Profe_Admin --rol admin` (pide la contraseña);
+después, en `/docs`: `POST /auth/login` → copiar `access_token` → botón
+**Authorize**.
 
 ### 5. Arrancar la API
 
@@ -246,7 +265,8 @@ source venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements-dev.txt
 cp .env.example .env
-nano .env        # DB_PASSWORD debe coincidir con la del CREATE USER
+python -m scripts.generar_clave   # copia la salida...
+nano .env        # ...en CLAVE_TOKENS; DB_PASSWORD debe coincidir con la del CREATE USER
 ```
 
 ### 4. Preparar los datos
@@ -293,7 +313,7 @@ flutter run -d <id-del-celular> --dart-define=API_URL=http://127.0.0.1:8000
 
 | Dónde | Qué debe verse |
 |---|---|
-| `/docs` de la API (local: <http://127.0.0.1:8000/docs> · nube: <https://api-tienda-wjac.onrender.com/docs>) | Swagger con los grupos Productos, Categorías, Estudiantes, Estadísticas y Predicción |
+| `/docs` de la API (local: <http://127.0.0.1:8000/docs> · nube: <https://api-tienda-wjac.onrender.com/docs>) | Swagger con los grupos Autenticación, Usuarios, Estudiantes, Estadísticas y Predicción. Crear, modificar o borrar estudiantes pide iniciar sesión como admin (sin sesión: **401**) |
 | App → **Estudiantes** | "300 de 300" y el filtro **"En riesgo (55)"**; promedios < 3.0 en rojo. Tocar uno abre el detalle |
 | App → **Gráficas** | "Estudiantes por carrera": Derecho es la más alta (**49**). El desplegable cambia entre 6 estadísticas |
 | App → **Predicción** | Elegir **Psicología** y pulsar Predecir → tarjeta **verde** "Sin riesgo". Elegir **Medicina**, horas en **0** y asistencia en **30 %** → tarjeta **roja** "En riesgo". Abajo: métricas del modelo (recall 73 %) |

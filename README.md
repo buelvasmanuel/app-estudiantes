@@ -16,6 +16,9 @@ tres pestañas:
   <img src="docs/capturas/6_sobre_el_modelo.png" width="200" alt="Métricas del modelo">
 </p>
 
+> **Para ejecutar el proyecto completo (API + app) desde cero en Windows o
+> Linux:** ver [INSTRUCCIONES_PROFESOR.md](INSTRUCCIONES_PROFESOR.md).
+
 ## Requisitos
 
 - Flutter 3.27 o superior (probado con 3.47.2 / Dart 3.13).
@@ -48,6 +51,14 @@ Comprueba que responde: <http://127.0.0.1:8000/docs>.
 
 ```bash
 flutter run -d linux
+```
+
+### Windows (escritorio)
+
+Requiere Visual Studio 2022 con "Desarrollo para el escritorio con C++".
+
+```bat
+flutter run -d windows
 ```
 
 ### Chrome / Brave (web)
@@ -103,7 +114,7 @@ La URL se decide en `lib/config.dart`:
 | Dónde corre | URL por defecto |
 |---|---|
 | Android (emulador) | `http://10.0.2.2:8000` |
-| Linux, Chrome, etc. | `http://127.0.0.1:8000` |
+| Windows, Linux, Chrome | `http://127.0.0.1:8000` |
 | Cualquiera, con `--dart-define=API_URL=...` | la que indiques |
 
 `String.fromEnvironment('API_URL')` se resuelve **al compilar**: si cambias

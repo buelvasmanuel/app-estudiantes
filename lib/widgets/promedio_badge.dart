@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/estudiante.dart';
 import '../theme.dart';
+import '../formato.dart';
 
 /// Pastilla con el promedio: roja si está en riesgo (< 3.0), verde si no.
 ///
@@ -30,7 +31,7 @@ class PromedioBadge extends StatelessWidget {
 
     return Semantics(
       label:
-          'Promedio ${estudiante.promedio.toStringAsFixed(2)}'
+          'Promedio ${formatoPromedio(estudiante.promedio)}'
           '${riesgo ? ', en riesgo' : ''}',
       excludeSemantics: true,
       child: Container(
@@ -51,7 +52,7 @@ class PromedioBadge extends StatelessWidget {
               color: texto,
             ),
             const SizedBox(width: 4),
-            Text(estudiante.promedio.toStringAsFixed(2), style: estilo),
+            Text(formatoPromedio(estudiante.promedio), style: estilo),
           ],
         ),
       ),

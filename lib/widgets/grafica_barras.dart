@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../models/estadistica.dart';
 import '../models/estudiante.dart';
 import '../theme.dart';
+import '../formato.dart';
 
 /// Cómo se dibujan las etiquetas del eje X según el espacio disponible.
 enum _ModoEtiquetas {
@@ -338,8 +339,8 @@ class _GraficaBarrasState extends State<GraficaBarras> {
   }
 
   static String _numeroEje(double valor, Unidad unidad) => switch (unidad) {
-    Unidad.promedio => valor.toStringAsFixed(1),
-    Unidad.porcentaje => '${valor.round()}%',
-    Unidad.conteo => valor.round().toString(),
+    Unidad.promedio => formatoDecimal(valor, 1),
+    Unidad.porcentaje => formatoPorcentaje(valor),
+    Unidad.conteo => formatoEntero(valor),
   };
 }

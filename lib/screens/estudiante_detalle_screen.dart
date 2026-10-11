@@ -4,6 +4,7 @@ import '../models/estudiante.dart';
 import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/promedio_badge.dart';
+import '../formato.dart';
 
 /// Detalle de un estudiante. Usa los datos que ya trajo el listado, así que
 /// no necesita otra petición a la API.
@@ -56,7 +57,7 @@ class EstudianteDetalleScreen extends StatelessWidget {
                       Text(
                         e.enRiesgo
                             ? 'En riesgo académico (promedio < '
-                                  '${Estudiante.umbralRiesgo.toStringAsFixed(1)})'
+                                  '${formatoDecimal(Estudiante.umbralRiesgo)})'
                             : 'Sin riesgo académico',
                         style: tema.textTheme.bodyMedium?.copyWith(
                           color: e.enRiesgo ? colores.riesgo : colores.ok,
@@ -88,7 +89,7 @@ class EstudianteDetalleScreen extends StatelessWidget {
                   _Barra(
                     icono: Icons.grade_outlined,
                     etiqueta: 'Promedio',
-                    valor: e.promedio.toStringAsFixed(2),
+                    valor: formatoPromedio(e.promedio),
                     progreso: e.promedio / 5,
                     color: e.enRiesgo ? colores.riesgo : colores.ok,
                   ),
@@ -102,7 +103,7 @@ class EstudianteDetalleScreen extends StatelessWidget {
                   _Barra(
                     icono: Icons.event_available_outlined,
                     etiqueta: 'Asistencia',
-                    valor: '${e.asistencia} %',
+                    valor: formatoPorcentaje(e.asistencia),
                     progreso: e.asistencia / 100,
                     color: tema.colorScheme.tertiary,
                   ),

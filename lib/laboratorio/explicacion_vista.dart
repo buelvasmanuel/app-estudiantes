@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import 'modelo.dart';
 import 'textos.dart';
+import '../formato.dart';
 
 /// El "¿por qué?": cuánto pesó cada variable en la estimación, con el aviso
 /// del modelo siempre visible. Sin animaciones: es para leer.
@@ -28,7 +29,7 @@ class ExplicacionVista extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           'Comparado con el estudiante medio de los datos, cuyo riesgo '
-          'estimado es ${porcentaje(explicacion.probabilidadBase)}.',
+          'estimado es ${formatoProbabilidad(explicacion.probabilidadBase)}.',
           style: tema.textTheme.bodySmall?.copyWith(
             color: tema.colorScheme.onSurfaceVariant,
           ),
@@ -61,7 +62,7 @@ class _FilaAporte extends StatelessWidget {
     return Semantics(
       container: true,
       label:
-          '$nombre, $valor: $sentido, $pct % del peso total'
+          '$nombre, $valor: $sentido, ${formatoPorcentaje(pct)} del peso total'
           '${esAccionable(a.variable) ? '' : ', no se puede cambiar en el juego'}',
       excludeSemantics: true,
       child: Padding(
@@ -86,7 +87,7 @@ class _FilaAporte extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '$sentido · $pct\u00A0%',
+                  '$sentido · ${formatoPorcentaje(pct)}',
                   style: tema.textTheme.labelMedium?.copyWith(color: color),
                 ),
               ],

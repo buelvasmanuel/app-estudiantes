@@ -18,6 +18,7 @@ import '../sonidos.dart';
 import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
+import '../formato.dart';
 
 /// Un caso del Laboratorio: aplicar fichas, ver el medidor y confirmar.
 class RescateScreen extends ConsumerStatefulWidget {
@@ -451,8 +452,8 @@ class _VistaResultado extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Riesgo estimado: ${porcentaje(r.probabilidadInicial)} → '
-                '${porcentaje(r.probabilidadFinal)}',
+                'Riesgo estimado: ${formatoProbabilidad(r.probabilidadInicial)} → '
+                '${formatoProbabilidad(r.probabilidadFinal)}',
                 textAlign: TextAlign.center,
                 style: tema.textTheme.titleMedium,
               ),
@@ -461,7 +462,7 @@ class _VistaResultado extends ConsumerWidget {
                 'Usaste ${r.fichasUsadas} $fichas. Lo mínimo era '
                 '${r.fichasOptimas}: '
                 '${describirSolucion(r.solucionOptima, caso.intervenciones)} '
-                '(${porcentaje(r.solucionOptima.probabilidad)}).',
+                '(${formatoProbabilidad(r.solucionOptima.probabilidad)}).',
                 textAlign: TextAlign.center,
                 style: tema.textTheme.bodyMedium,
               ),

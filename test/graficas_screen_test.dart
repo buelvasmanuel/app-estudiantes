@@ -36,7 +36,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Riesgo por carrera').last);
     await tester.pumpAndSettle();
-    expect(find.text('33.3%'), findsWidgets);
+    expect(find.text('33,3\u00A0%'), findsWidgets);
 
     // Volver a por-carrera no repite la petición.
     await tester.tap(find.byType(DropdownMenu<TipoEstadistica>));

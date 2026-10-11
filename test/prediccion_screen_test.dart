@@ -62,7 +62,7 @@ void main() {
       'carrera': 'Medicina',
     });
     expect(find.text('En riesgo académico'), findsOneWidget);
-    expect(find.text('98 %'), findsOneWidget);
+    expect(find.text('98\u00A0%'), findsOneWidget);
     expect(
       find.text('Indicador orientativo del modelo, no un diagnóstico'),
       findsOneWidget,
@@ -98,7 +98,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Sin riesgo académico'), findsOneWidget);
-    expect(find.text('12 %'), findsOneWidget);
+    expect(find.text('12\u00A0%'), findsOneWidget);
     final tarjeta = tester.widget<Card>(
       find.ancestor(
         of: find.text('Sin riesgo académico'),

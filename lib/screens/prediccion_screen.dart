@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
+import '../formato.dart';
 
 /// Pestaña 3: formulario que pide al modelo de la API si un estudiante con
 /// esos datos estaría en riesgo académico.
@@ -159,7 +160,7 @@ class _PrediccionScreenState extends ConsumerState<PrediccionScreen> {
                         valor: _asistencia,
                         min: 0,
                         max: 100,
-                        formato: (v) => '${v.round()} %',
+                        formato: (v) => formatoPorcentaje(v),
                         onChanged: (v) => setState(() => _asistencia = v),
                       ),
                       _CampoSlider(
@@ -378,7 +379,7 @@ class _ResultadoCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${resultado.porcentaje} %',
+                        formatoPorcentaje(resultado.porcentaje),
                         key: const Key('probabilidad'),
                         style: tema.textTheme.headlineMedium?.copyWith(
                           color: texto,
@@ -456,7 +457,7 @@ class _SobreElModelo extends StatelessWidget {
 
   final MetricasModelo metricas;
 
-  static String _pct(num? v) => v == null ? '–' : '${(v * 100).round()} %';
+  static String _pct(num? v) => v == null ? '–' : formatoProbabilidad(v);
 
   static String _nombreVariable(String v) => switch (v) {
     'horas_estudio' => 'horas de estudio',
@@ -483,7 +484,7 @@ class _SobreElModelo extends StatelessWidget {
       ('Accuracy', _pct(m.accuracy), 'Aciertos totales'),
       (
         'F2',
-        m.f2 == null ? '–' : m.f2!.toStringAsFixed(2),
+        m.f2 == null ? '–' : formatoDecimal(m.f2!, 2),
         'Equilibrio, pesando más el recall',
       ),
     ];
@@ -504,7 +505,7 @@ class _SobreElModelo extends StatelessWidget {
                 if (m.totalDatos != null)
                   'Entrenado con ${m.totalDatos} estudiantes'
                       '${m.porcentajeEnRiesgo == null ? '' : ' '
-                                '(${m.porcentajeEnRiesgo!.toStringAsFixed(1)} % en riesgo)'}',
+                                '(${formatoPorcentaje(m.porcentajeEnRiesgo!, 1)} en riesgo)'}',
                 if (entrenado != null)
                   'el ${entrenado.day}/${entrenado.month}/${entrenado.year}',
               ].join(' '),

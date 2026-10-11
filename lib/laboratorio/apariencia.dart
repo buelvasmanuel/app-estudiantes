@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../formato.dart';
 import '../theme.dart';
 
 /// Estado de ánimo del búho guía.
@@ -64,8 +65,8 @@ class MedidorRiesgo extends StatelessWidget {
     return Semantics(
       container: true,
       label:
-          'Riesgo estimado por el modelo: $porcentaje %. '
-          'El objetivo es bajarlo de ${(objetivo * 100).round()} %.',
+          'Riesgo estimado por el modelo: ${formatoPorcentaje(porcentaje)}. '
+          'El objetivo es bajarlo de ${formatoProbabilidad(objetivo)}.',
       excludeSemantics: true,
       child: AspectRatio(
         aspectRatio: 2,
@@ -92,7 +93,7 @@ class MedidorRiesgo extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    '$porcentaje\u00A0%',
+                    formatoPorcentaje(porcentaje),
                     key: const Key('porcentaje-medidor'),
                     style: tema.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w700,

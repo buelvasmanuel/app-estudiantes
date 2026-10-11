@@ -17,6 +17,7 @@ import '../widgets/estado_vistas.dart';
 import '../widgets/grafica_barras.dart';
 import '../widgets/menu_cuenta.dart';
 import '../widgets/promedio_badge.dart';
+import '../formato.dart';
 
 /// Pestaña "Campus": cada edificio es una carrera, cada piso un semestre y
 /// cada ventana un estudiante (roja si está en riesgo).
@@ -457,8 +458,8 @@ class _Expediente extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'En riesgo: ${e.enRiesgo} (${e.porcentajeRiesgo.toStringAsFixed(0)} %)'
-          ' · Promedio medio: ${e.promedioMedio.toStringAsFixed(2)}',
+          'En riesgo: ${e.enRiesgo} (${formatoPorcentaje(e.porcentajeRiesgo)})'
+          ' · Promedio medio: ${formatoPromedio(e.promedioMedio)}',
           style: tema.textTheme.bodyMedium,
         ),
         const SizedBox(height: 8),

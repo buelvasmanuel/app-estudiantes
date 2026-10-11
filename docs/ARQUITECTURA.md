@@ -207,3 +207,8 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   (`flutter_secure_storage` 11.2 en móvil/escritorio, memoria en web),
   pantallas de login/registro y redirección del router según la sesión.
   Android con `allowBackup="false"`. Linux necesita `libsecret`.
+- **Contrato v1.1** (`api-tienda` `e284f8f`): refresh sin respuesta → un
+  reintento tras timeout, hasta 2 tras error de red, ninguno pasados 110 s
+  (ventana de 120 s). Los endpoints públicos ignoran `Authorization`.
+  **Pendiente (opcional):** pantalla de docente para `POST /usuarios/lote`
+  (alta de hasta 40 cuentas con contraseñas generadas, solo visibles una vez).

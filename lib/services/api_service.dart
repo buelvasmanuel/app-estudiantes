@@ -17,6 +17,7 @@ class ApiException implements Exception {
     this.statusCode,
     this.codigo,
     this.reintentarEn,
+    this.esTimeout = false,
   });
 
   final String mensaje;
@@ -30,6 +31,10 @@ class ApiException implements Exception {
 
   /// Cabecera `Retry-After` de un 429: cuánto esperar antes de reintentar.
   final Duration? reintentarEn;
+
+  /// `true` si no hubo respuesta porque se agotó el tiempo de espera (la API
+  /// pudo recibir y procesar la petición); `false` si la conexión falló.
+  final bool esTimeout;
 
   bool get sinConexion => statusCode == null;
 
@@ -231,6 +236,7 @@ class ApiService {
       throw ApiException(
         'La API no respondió en ${limite.inSeconds} s ($baseUrl). '
         '${_esLocal ? 'Comprueba que uvicorn está corriendo y que la dirección es correcta.' : 'El servidor puede estar caído; inténtalo de nuevo en un momento.'}',
+        esTimeout: true,
       );
     } on http.ClientException {
       // En Linux/Android, http convierte el SocketException ("conexión

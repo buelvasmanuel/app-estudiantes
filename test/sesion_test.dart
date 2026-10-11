@@ -268,4 +268,83 @@ void main() {
       expect(await almacen.leer(), isNull);
     });
   });
+
+  group('refresh sin respuesta con el reloj simulado (§6, regla 5)', () {
+    // testWidgets avanza el tiempo con pump: los timeouts de 60 s no se
+    // esperan de verdad.
+    Future<(ServidorFalso, ApiService, GestorSesion)> preparar(
+      WidgetTester tester,
+    ) async {
+      final servidor = ServidorFalso(protegidas: {'/protegido': 'ok'});
+      final api = servidor.api();
+      final sesion = GestorSesion(
+        api: api,
+        almacen: AlmacenEnMemoria(),
+        ahora: () => tester.binding.clock.now(),
+      );
+      api.interceptores.add(sesion);
+      await sesion.restaurar();
+      await sesion.iniciarSesion('Detective_Ana', 'una frase larga');
+      servidor
+        ..registro.clear()
+        ..caducarAccess();
+      return (servidor, api, sesion);
+    }
+
+    int refrescosDe(ServidorFalso s) =>
+        s.registro.where((r) => r == 'POST /auth/refresh').length;
+
+    testWidgets('tras un timeout reintenta UNA vez', (tester) async {
+      final (servidor, api, sesion) = await preparar(tester);
+      servidor.fallosRefresh.add(ServidorFalso.colgar);
+
+      Object? resultado;
+      api.get('/protegido').then((v) => resultado = v);
+      await tester.pump(const Duration(seconds: 61));
+      await tester.pump();
+      expect(resultado, 'ok');
+      expect(refrescosDe(servidor), 2);
+    });
+
+    testWidgets('dos timeouts: error y se conservan los tokens', (
+      tester,
+    ) async {
+      final (servidor, api, sesion) = await preparar(tester);
+      servidor.fallosRefresh.addAll([
+        ServidorFalso.colgar,
+        ServidorFalso.colgar,
+      ]);
+
+      Object? error;
+      api.get('/protegido').catchError((Object e) => error = e);
+      await tester.pump(const Duration(seconds: 121));
+      await tester.pump();
+      expect(
+        error,
+        isA<ApiException>().having((e) => e.esTimeout, 'esTimeout', isTrue),
+      );
+      expect(refrescosDe(servidor), 2);
+      expect(sesion.estado, EstadoSesion.conSesion);
+    });
+
+    testWidgets('ningún reintento sale más de 110 s después del primero', (
+      tester,
+    ) async {
+      final (servidor, api, sesion) = await preparar(tester);
+      // Cada intento tarda 56 s en fallar por red: intentos en 0 s y 56 s;
+      // el tercero saldría a los 112 s, fuera del tope.
+      servidor.fallosRefresh.addAll([
+        for (var i = 0; i < 3; i++)
+          ServidorFalso.redTras(const Duration(seconds: 56)),
+      ]);
+
+      Object? error;
+      api.get('/protegido').catchError((Object e) => error = e);
+      await tester.pump(const Duration(seconds: 113));
+      await tester.pump();
+      expect(error, isA<ApiException>());
+      expect(refrescosDe(servidor), 2);
+      expect(sesion.estado, EstadoSesion.conSesion);
+    });
+  });
 }

@@ -55,6 +55,10 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
   /// Si al access le queda menos que esto, se renueva antes de enviar.
   static const margen = Duration(seconds: 60);
 
+  /// Tope para reintentar un refresh sin respuesta, contado desde el primer
+  /// intento: la API acepta el mismo refresh durante 120 s (§5).
+  static const ultimoReintento = Duration(seconds: 110);
+
   /// `/auth/*` puede despertar a Render: siempre 60 s.
   static const limiteAuth = Config.timeoutArranque;
 
@@ -199,9 +203,14 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
         codigo: 'refresh_invalido',
       );
     }
-    // Sin respuesta (red, timeout): se reintenta el MISMO refresh hasta 2
-    // veces más. La API lo acepta repetido durante 30 s (§5).
-    for (var intento = 1; ; intento++) {
+    // Sin respuesta se reintenta con el MISMO refresh (§6, regla 5): una vez
+    // más tras un timeout (el servidor ya estará despierto) y hasta 2 veces
+    // tras un error de red inmediato. La API lo acepta repetido durante 120 s
+    // (§5), así que ningún reintento sale pasados [ultimoReintento].
+    final inicio = _ahora();
+    var reintentosTimeout = 0;
+    var reintentosRed = 0;
+    while (true) {
       final enviado = _ahora();
       try {
         final json = await _api.enviar(
@@ -221,8 +230,13 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
       } on ApiException catch (e) {
         if (generacion != _generacion) rethrow;
         if (e.sinConexion) {
-          if (intento < 3) continue;
-          rethrow; // sin red: se conservan los tokens
+          final quedan = e.esTimeout
+              ? reintentosTimeout++ < 1
+              : reintentosRed++ < 2;
+          final aTiempo =
+              _ahora().difference(inicio) <= GestorSesion.ultimoReintento;
+          if (quedan && aTiempo) continue;
+          rethrow; // sin respuesta: se conservan los tokens
         }
         final aviso = switch ((e.statusCode, e.codigo)) {
           (401, 'sesion_revocada') => avisoRevocada,

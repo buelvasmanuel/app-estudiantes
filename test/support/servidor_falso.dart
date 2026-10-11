@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:app_estudiantes/services/api_service.dart';
@@ -29,6 +30,17 @@ class ServidorFalso {
 
   /// Cuántos `POST /auth/refresh` seguidos fallarán por red.
   int fallosDeRedEnRefresh = 0;
+
+  /// Fallos de los próximos `POST /auth/refresh`, uno por llamada, antes de
+  /// procesarlos: [colgar] (no responde nunca → timeout) o [redTras].
+  final fallosRefresh = <Future<Never> Function()>[];
+
+  static Future<Never> colgar() => Completer<Never>().future;
+
+  static Future<Never> Function() redTras(Duration demora) => () async {
+    await Future<void>.delayed(demora);
+    throw http.ClientException('Sin red');
+  };
 
   /// Lo que tarda en llegar la respuesta de `POST /auth/refresh` (el
   /// servidor ya ha rotado el token).
@@ -87,6 +99,7 @@ class ServidorFalso {
         usuarios[alias] = cuerpo['password']! as String;
         return _emitir(alias, status: 201);
       case '/auth/refresh':
+        if (fallosRefresh.isNotEmpty) await fallosRefresh.removeAt(0)();
         if (fallosDeRedEnRefresh > 0) {
           fallosDeRedEnRefresh--;
           throw http.ClientException('Sin red', peticion.url);

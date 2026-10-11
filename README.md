@@ -21,7 +21,7 @@ tres pestañas:
 | | Enlace |
 |---|---|
 | **App web** | <https://buelvasmanuel.github.io/app-estudiantes/> |
-| **APK Android** | [Estudiantes.apk](https://github.com/buelvasmanuel/app-estudiantes/releases/latest/download/Estudiantes.apk) ([todas las versiones](https://github.com/buelvasmanuel/app-estudiantes/releases)) |
+| **APK Android** | [Estudiantes.apk](https://github.com/buelvasmanuel/app-estudiantes/releases/latest/download/Estudiantes.apk) ([todas las versiones](https://github.com/buelvasmanuel/app-estudiantes/releases)) · Android 7.0+ |
 | **API** | <https://api-tienda-wjac.onrender.com/docs> |
 
 La API está en el plan gratuito de Render, que se apaga tras ~15 min sin uso:

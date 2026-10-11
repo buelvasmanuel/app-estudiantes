@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../sonidos.dart';
 
 import 'modelo.dart';
 
@@ -13,6 +16,9 @@ import 'modelo.dart';
 Future<void> celebrar(BuildContext context, Recompensa recompensa) async {
   if (!recompensa.hayCelebracion) return;
   final quieto = MediaQuery.disableAnimationsOf(context);
+  ProviderScope.containerOf(context)
+      .read(sonidosProvider)
+      .tocar(Sonido.celebracion);
   await showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,

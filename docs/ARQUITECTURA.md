@@ -230,3 +230,11 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   (`/docente`, alta en lote + jugadores). `usuarioIdProvider` rehace lo del
   jugador al cambiar de cuenta. Las pruebas de integración contra la API real
   inician sesión con una cuenta de prueba (`--dart-define=ALIAS/PASSWORD`).
+- **Fase 6, identidad visual**: el diseño anterior se retira. Dos temas
+  completos elegibles (`lib/tema/temas.dart`): Noche (Fredoka + Nunito) y
+  Expediente (Courier Prime + Atkinson Hyperlegible, sello «RESUELTO»),
+  fuentes OFL incluidas. Tema, sonidos y tutorial en `shared_preferences`
+  (`lib/preferencias.dart`, abiertas en `main()` antes de la app). Tutorial
+  del búho (`/tutorial`, redirect del router la primera vez). Sonidos CC0
+  de Kenney con `audioplayers` (en Linux necesita GStreamer). Test de
+  contraste WCAG de los dos temas.

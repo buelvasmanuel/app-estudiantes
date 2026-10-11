@@ -1,0 +1,12 @@
+Sonidos de Kenney (www.kenney.nl), licencia Creative Commons Zero (CC0 1.0):
+http://creativecommons.org/publicdomain/zero/1.0/
+Convertidos de OGG a MP3 (128 kbps) para que suenen en todos los navegadores.
+
+  acierto.mp3      ← Interface Sounds 1.0: confirmation_001.ogg
+  pista.mp3        ← Interface Sounds 1.0: question_001.ogg
+  ficha.mp3        ← Interface Sounds 1.0: select_001.ogg
+  rescate.mp3      ← Interface Sounds 1.0: glass_001.ogg
+  celebracion.mp3  ← Music Jingles: jingles_PIZZI00.ogg (Pizzicato)
+
+Textos de licencia originales: LICENCIA_interface-sounds.txt y
+LICENCIA_music-jingles.txt.

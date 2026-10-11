@@ -23,7 +23,7 @@ class LaboratorioScreen extends ConsumerWidget {
     final estado = ref.watch(casosProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Laboratorio de rescate'),
+        title: const Text('Laboratorio'),
         actions: const [MenuCuenta()],
       ),
       body: switch (estado) {

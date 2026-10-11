@@ -7,15 +7,31 @@
 import 'package:app_estudiantes/config.dart';
 import 'package:app_estudiantes/main.dart';
 import 'package:app_estudiantes/models/sesion.dart';
+import 'package:app_estudiantes/preferencias.dart';
 import 'package:app_estudiantes/providers.dart';
 import 'package:app_estudiantes/router.dart';
 import 'package:app_estudiantes/services/almacen_refresh.dart';
 import 'package:app_estudiantes/services/api_service.dart';
+import 'package:app_estudiantes/tema/temas.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const _alias = String.fromEnvironment('ALIAS');
 const _password = String.fromEnvironment('PASSWORD');
+
+/// Tema de las capturas: --dart-define=TEMA=noche|expediente (por defecto,
+/// Expediente).
+const _tema = String.fromEnvironment('TEMA', defaultValue: 'expediente');
+
+TemaJuego get temaDePrueba =>
+    TemaJuego.values.firstWhere((t) => t.name == _tema);
+
+/// Tutorial ya visto y el tema de las capturas (no se tocan las
+/// preferencias reales del equipo).
+Preferencias preferenciasDePrueba() => PreferenciasEnMemoria({
+  Preferencias.claveTutorial: true,
+  Preferencias.claveTema: temaDePrueba.name,
+});
 
 /// `POST /auth/login` con la cuenta de prueba. Llamarla dentro de
 /// `tester.runAsync` (hace una petición de red de verdad).
@@ -46,34 +62,31 @@ Widget appReal({required Tokens tokens, String inicial = Rutas.campus}) =>
     ProviderScope(
       retry: sinReintentos,
       overrides: [
+        preferenciasProvider.overrideWithValue(preferenciasDePrueba()),
         almacenRefreshProvider.overrideWithValue(AlmacenEnMemoria()),
         sesionProvider.overrideWith((ref) => crearSesion(ref, tokens: tokens)),
-        routerProvider.overrideWith((ref) {
-          final router = crearRouter(
-            sesion: ref.watch(sesionProvider),
-            inicial: inicial,
-          );
-          ref.onDispose(router.dispose);
-          return router;
-        }),
+        routerProvider.overrideWith(
+          (ref) => crearRouterDesde(ref, inicial: inicial),
+        ),
       ],
       child: const EstudiantesApp(),
     );
 
 /// La app completa contra la API real, SIN sesión: hay que entrar por la
 /// pantalla de login. Empieza en [inicial] (tras el login vuelve ahí).
-Widget appConLogin({required String inicial}) => ProviderScope(
-  retry: sinReintentos,
-  overrides: [
-    almacenRefreshProvider.overrideWithValue(AlmacenEnMemoria()),
-    routerProvider.overrideWith((ref) {
-      final router = crearRouter(
-        sesion: ref.watch(sesionProvider),
-        inicial: inicial,
-      );
-      ref.onDispose(router.dispose);
-      return router;
-    }),
-  ],
-  child: const EstudiantesApp(),
-);
+///
+/// [preferencias]: por defecto, tutorial visto y el tema de --dart-define=TEMA.
+Widget appConLogin({required String inicial, Preferencias? preferencias}) =>
+    ProviderScope(
+      retry: sinReintentos,
+      overrides: [
+        preferenciasProvider.overrideWithValue(
+          preferencias ?? preferenciasDePrueba(),
+        ),
+        almacenRefreshProvider.overrideWithValue(AlmacenEnMemoria()),
+        routerProvider.overrideWith(
+          (ref) => crearRouterDesde(ref, inicial: inicial),
+        ),
+      ],
+      child: const EstudiantesApp(),
+    );

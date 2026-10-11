@@ -1,33 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Tema Material 3 de la app (claro y oscuro a partir de un color semilla).
-abstract final class AppTheme {
-  static const Color _semilla = Color(0xFF3F51B5); // índigo "académico"
-
-  static ThemeData get claro => _tema(Brightness.light);
-  static ThemeData get oscuro => _tema(Brightness.dark);
-
-  static ThemeData _tema(Brightness brillo) {
-    final colores = ColorScheme.fromSeed(
-      seedColor: _semilla,
-      brightness: brillo,
-    );
-    return ThemeData(
-      colorScheme: colores,
-      extensions: [
-        brillo == Brightness.light ? ColoresEstado.claro : ColoresEstado.oscuro,
-      ],
-      cardTheme: const CardThemeData(
-        margin: EdgeInsets.zero,
-        clipBehavior: Clip.antiAlias,
-      ),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(),
-      ),
-    );
-  }
-}
-
 /// Colores con significado (riesgo / sin riesgo) que el ColorScheme no trae:
 /// `error` existe, pero no hay un "verde de éxito". Con un ThemeExtension los
 /// tenemos en ambos temas y se leen con `ColoresEstado.of(context)`.
@@ -53,30 +25,32 @@ class ColoresEstado extends ThemeExtension<ColoresEstado> {
   final Color okContenedor;
   final Color onOkContenedor;
 
-  static const claro = ColoresEstado(
-    riesgo: Color(0xFFBA1A1A),
-    onRiesgo: Colors.white,
-    riesgoContenedor: Color(0xFFFFDAD6),
-    onRiesgoContenedor: Color(0xFF410002),
-    ok: Color(0xFF1B6D2F),
-    onOk: Colors.white,
-    okContenedor: Color(0xFFA6F4AC),
-    onOkContenedor: Color(0xFF002107),
+  /// Tema Noche: rojo y verde luminosos sobre azul noche.
+  static const noche = ColoresEstado(
+    riesgo: Color(0xFFFF7B7B),
+    onRiesgo: Color(0xFF3A0000),
+    riesgoContenedor: Color(0xFF5C1A1F),
+    onRiesgoContenedor: Color(0xFFFFD9D9),
+    ok: Color(0xFF6EE7A8),
+    onOk: Color(0xFF00331A),
+    okContenedor: Color(0xFF114D33),
+    onOkContenedor: Color(0xFFC8FFE2),
   );
 
-  static const oscuro = ColoresEstado(
-    riesgo: Color(0xFFFFB4AB),
-    onRiesgo: Color(0xFF690005),
-    riesgoContenedor: Color(0xFF93000A),
-    onRiesgoContenedor: Color(0xFFFFDAD6),
-    ok: Color(0xFF8BD892),
-    onOk: Color(0xFF00390F),
-    okContenedor: Color(0xFF00531A),
-    onOkContenedor: Color(0xFFA6F4AC),
+  /// Tema Expediente: tinta roja y verde sobre papel.
+  static const expediente = ColoresEstado(
+    riesgo: Color(0xFFB3261E),
+    onRiesgo: Colors.white,
+    riesgoContenedor: Color(0xFFF8D7D2),
+    onRiesgoContenedor: Color(0xFF5C0F0A),
+    ok: Color(0xFF2E7D32),
+    onOk: Colors.white,
+    okContenedor: Color(0xFFD5EDD3),
+    onOkContenedor: Color(0xFF10391A),
   );
 
   static ColoresEstado of(BuildContext context) =>
-      Theme.of(context).extension<ColoresEstado>() ?? claro;
+      Theme.of(context).extension<ColoresEstado>() ?? expediente;
 
   @override
   ColoresEstado copyWith({

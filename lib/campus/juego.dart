@@ -4,7 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
-import '../identidad.dart';
+import '../tema/temas.dart';
 import '../theme.dart';
 import 'controlador.dart';
 import 'disposicion.dart';
@@ -26,13 +26,14 @@ class PaletaCampus {
     required this.rayaRiesgo,
     required this.texto,
     required this.textoSecundario,
+    required this.bordeMuestra,
     this.brillo = false,
     this.grosorContorno = 1,
   });
 
   factory PaletaCampus.de(ThemeData tema) {
     final c = tema.colorScheme;
-    final estado = tema.extension<ColoresEstado>() ?? ColoresEstado.claro;
+    final estado = tema.extension<ColoresEstado>() ?? ColoresEstado.expediente;
     final estilo = tema.extension<EstiloJuego>() ?? const EstiloJuego();
     final noche = estilo.fondoCampus == FondoCampus.noche;
     final papel = estilo.fondoCampus == FondoCampus.papel;
@@ -56,6 +57,7 @@ class PaletaCampus {
           : papel
           ? c.surfaceContainerHigh
           : c.onSurface.withValues(alpha: 0.1),
+      bordeMuestra: c.onSurfaceVariant,
       brillo: estilo.ventanasConBrillo,
       grosorContorno: estilo.contornoTinta ? 1.6 : 1,
       ok: estado.ok,
@@ -79,7 +81,12 @@ class PaletaCampus {
   final Color texto;
   final Color textoSecundario;
 
-  /// Las ventanas encendidas brillan (identidad "noche").
+  /// Borde de las muestras de la leyenda: garantiza ≥ 3:1 con el fondo
+  /// aunque la ventana vacía casi no contraste (en Expediente, papel sobre
+  /// papel).
+  final Color bordeMuestra;
+
+  /// Las ventanas encendidas brillan (tema Noche).
   final bool brillo;
   final double grosorContorno;
 

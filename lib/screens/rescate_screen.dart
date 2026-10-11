@@ -14,6 +14,7 @@ import '../laboratorio/textos.dart';
 import '../providers.dart';
 import '../router.dart';
 import '../services/api_service.dart';
+import '../sonidos.dart';
 import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
@@ -45,6 +46,7 @@ class _RescateScreenState extends ConsumerState<RescateScreen> {
           .resolver(widget.estudianteId, rescate.codigos);
       if (!mounted) return;
       setState(() => _resultado = r);
+      if (r.logrado) ref.read(sonidosProvider).tocar(Sonido.rescate);
       if (r.recompensa case final recompensa?) {
         progresoCambiado(ref);
         await celebrar(context, recompensa);
@@ -165,7 +167,10 @@ class _RescateScreenState extends ConsumerState<RescateScreen> {
                         : i.fichas > rescate.fichasRestantes
                         ? 'No te quedan fichas suficientes'
                         : null,
-                    onPressed: () => setState(() => _rescate = rescate.con(i)),
+                    onPressed: () {
+                      ref.read(sonidosProvider).tocar(Sonido.ficha);
+                      setState(() => _rescate = rescate.con(i));
+                    },
                   ),
                 ),
               Wrap(

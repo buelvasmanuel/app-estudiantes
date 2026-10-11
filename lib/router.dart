@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'models/estudiante.dart';
+import 'preferencias.dart';
 import 'providers.dart';
 import 'screens/estudiante_detalle_screen.dart';
 import 'screens/acceso_screen.dart';
@@ -16,6 +18,7 @@ import 'screens/laboratorio_screen.dart';
 import 'screens/perfil_screen.dart';
 import 'screens/prediccion_screen.dart';
 import 'screens/rescate_screen.dart';
+import 'screens/tutorial_screen.dart';
 import 'services/sesion.dart';
 import 'widgets/estado_vistas.dart';
 import 'widgets/selector_datos.dart';
@@ -39,21 +42,44 @@ abstract final class Rutas {
   /// Mientras se recupera la sesión guardada al arrancar.
   static const cargando = '/cargando';
 
+  /// El tutorial del búho (la primera vez, tras entrar).
+  static const tutorial = '/tutorial';
+
   static String estudiante(int id) => '$estudiantes/$id';
   static String rescate(int estudianteId) => '$laboratorio/$estudianteId';
   static String casoJuego(String codigo) =>
       '$casos/${Uri.encodeComponent(codigo)}';
 }
 
-final routerProvider = Provider<GoRouter>((ref) {
-  final router = crearRouter(sesion: ref.watch(sesionProvider));
-  ref.onDispose(router.dispose);
+final routerProvider = Provider<GoRouter>((ref) => crearRouterDesde(ref));
+
+/// El router con la sesión y el tutorial de [ref]. Lo usan [routerProvider] y
+/// los tests (con otra ruta [inicial]).
+GoRouter crearRouterDesde(Ref ref, {String inicial = Rutas.campus}) {
+  // El router no es un widget: el estado del tutorial le llega como
+  // Listenable para que vuelva a evaluar redirect cuando cambia.
+  final tutorialVisto = ValueNotifier(ref.read(tutorialVistoProvider));
+  ref.listen(tutorialVistoProvider, (_, visto) => tutorialVisto.value = visto);
+  final router = crearRouter(
+    sesion: ref.watch(sesionProvider),
+    tutorialVisto: tutorialVisto,
+    inicial: inicial,
+  );
+  ref.onDispose(() {
+    router.dispose();
+    tutorialVisto.dispose();
+  });
   return router;
-});
+}
 
 /// A dónde llevar según el estado de la [sesion]. Sin sesión, todo lleva al
 /// login; la ruta pedida se guarda en `?desde=` para volver a ella después.
-String? redirigir(GestorSesion sesion, GoRouterState state) {
+/// Con sesión y sin haber visto el tutorial, primero el tutorial.
+String? redirigir(
+  GestorSesion sesion,
+  GoRouterState state, {
+  bool tutorialVisto = true,
+}) {
   final ruta = state.matchedLocation;
   final enAcceso = ruta == Rutas.login || ruta == Rutas.registro;
   final desde = _rutaInterna(state.uri.queryParameters['desde']);
@@ -71,7 +97,15 @@ String? redirigir(GestorSesion sesion, GoRouterState state) {
       Rutas.login,
       ruta == Rutas.cargando ? desde : pedida,
     ),
-    EstadoSesion.conSesion when enAcceso || ruta == Rutas.cargando =>
+    EstadoSesion.conSesion when !tutorialVisto =>
+      ruta == Rutas.tutorial
+          ? null
+          : con(
+              Rutas.tutorial,
+              enAcceso || ruta == Rutas.cargando ? desde : pedida,
+            ),
+    EstadoSesion.conSesion
+        when enAcceso || ruta == Rutas.cargando || ruta == Rutas.tutorial =>
       desde ?? Rutas.campus,
     EstadoSesion.conSesion => null,
   };
@@ -85,7 +119,8 @@ String? _rutaInterna(String? ruta) =>
         !ruta.startsWith('//') &&
         !ruta.startsWith(Rutas.login) &&
         !ruta.startsWith(Rutas.registro) &&
-        !ruta.startsWith(Rutas.cargando)
+        !ruta.startsWith(Rutas.cargando) &&
+        !ruta.startsWith(Rutas.tutorial)
     ? ruta
     : null;
 
@@ -95,16 +130,18 @@ String? _rutaInterna(String? ruta) =>
 /// de la pestaña visible.
 GoRouter crearRouter({
   required GestorSesion sesion,
+  ValueListenable<bool>? tutorialVisto,
   String inicial = Rutas.campus,
 }) {
   final raiz = GlobalKey<NavigatorState>(debugLabel: 'raiz');
   return GoRouter(
     navigatorKey: raiz,
     initialLocation: inicial,
-    // Cada cambio de sesión (login, logout, sesión revocada) vuelve a
-    // evaluar redirect.
-    refreshListenable: sesion,
-    redirect: (_, state) => redirigir(sesion, state),
+    // Cada cambio de sesión (login, logout, sesión revocada) o del tutorial
+    // vuelve a evaluar redirect.
+    refreshListenable: Listenable.merge([sesion, ?tutorialVisto]),
+    redirect: (_, state) =>
+        redirigir(sesion, state, tutorialVisto: tutorialVisto?.value ?? true),
     routes: [
       GoRoute(path: '/', redirect: (_, _) => Rutas.campus),
       GoRoute(
@@ -126,6 +163,7 @@ GoRouter crearRouter({
         ),
       ),
       GoRoute(path: Rutas.docente, builder: (_, _) => const DocenteScreen()),
+      GoRoute(path: Rutas.tutorial, builder: (_, _) => const TutorialScreen()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => InicioPage(shell: shell),
         branches: [

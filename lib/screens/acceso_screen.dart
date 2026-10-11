@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../providers.dart';
 import '../router.dart';
 import '../services/api_service.dart';
+import '../tema/temas.dart';
 import '../widgets/estado_vistas.dart';
 
 enum ModoAcceso { login, registro }
@@ -139,166 +140,177 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
     final bloqueo = _segundosBloqueo;
 
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: AnchoMaximo(
-              ancho: 420,
-              child: Form(
-                key: _formulario,
-                child: AutofillGroup(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Icon(
-                        Icons.travel_explore_rounded,
-                        size: 56,
-                        color: tema.colorScheme.primary,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Campus Detective',
-                        style: tema.textTheme.headlineMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _esRegistro
-                            ? 'Crea tu cuenta de detective'
-                            : 'Inicia sesión para investigar',
-                        style: tema.textTheme.bodyLarge?.copyWith(
-                          color: tema.colorScheme.onSurfaceVariant,
+      // El fondo del tema (cielo nocturno o cuadrícula de papel), como en el
+      // Campus: la primera impresión ya es la del juego.
+      body: CustomPaint(
+        painter: PintorFondoCampus(
+          EstiloJuego.of(context).fondoCampus,
+          tema.colorScheme,
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: AnchoMaximo(
+                ancho: 420,
+                child: Form(
+                  key: _formulario,
+                  child: AutofillGroup(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Icon(
+                          Icons.travel_explore_rounded,
+                          size: 56,
+                          color: tema.colorScheme.primary,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                      if (aviso != null) ...[
-                        _Mensaje(texto: aviso, icono: Icons.info_outline),
-                        const SizedBox(height: 16),
-                      ],
-                      TextFormField(
-                        key: const Key('alias'),
-                        controller: _alias,
-                        decoration: const InputDecoration(
-                          labelText: 'Alias',
-                          prefixIcon: Icon(Icons.badge_outlined),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Campus Detective',
+                          style: tema.textTheme.headlineMedium,
+                          textAlign: TextAlign.center,
                         ),
-                        autofillHints: const [AutofillHints.username],
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        textInputAction: TextInputAction.next,
-                        inputFormatters: [
-                          // El alias no admite espacios: se evitan al escribir.
-                          FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                        const SizedBox(height: 4),
+                        Text(
+                          _esRegistro
+                              ? 'Crea tu cuenta de detective'
+                              : 'Inicia sesión para investigar',
+                          style: tema.textTheme.bodyLarge?.copyWith(
+                            color: tema.colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        if (aviso != null) ...[
+                          _Mensaje(texto: aviso, icono: Icons.info_outline),
+                          const SizedBox(height: 16),
                         ],
-                        validator: _esRegistro
-                            ? ReglasAcceso.validarAlias
-                            : (v) =>
-                                  (v ?? '').isEmpty ? 'Escribe tu alias' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        key: const Key('password'),
-                        controller: _password,
-                        obscureText: !_verPassword,
-                        decoration: InputDecoration(
-                          labelText: 'Contraseña',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          helperText: _esRegistro
-                              ? 'Al menos ${ReglasAcceso.passwordMin} '
-                                    'caracteres. Una frase es fácil de '
-                                    'recordar.'
-                              : null,
-                          suffixIcon: IconButton(
-                            tooltip: _verPassword
-                                ? 'Ocultar contraseña'
-                                : 'Mostrar contraseña',
-                            onPressed: () =>
-                                setState(() => _verPassword = !_verPassword),
-                            icon: Icon(
-                              _verPassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
+                        TextFormField(
+                          key: const Key('alias'),
+                          controller: _alias,
+                          decoration: const InputDecoration(
+                            labelText: 'Alias',
+                            prefixIcon: Icon(Icons.badge_outlined),
+                          ),
+                          autofillHints: const [AutofillHints.username],
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          textInputAction: TextInputAction.next,
+                          inputFormatters: [
+                            // El alias no admite espacios: se evitan al escribir.
+                            FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                          ],
+                          validator: _esRegistro
+                              ? ReglasAcceso.validarAlias
+                              : (v) => (v ?? '').isEmpty
+                                    ? 'Escribe tu alias'
+                                    : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          key: const Key('password'),
+                          controller: _password,
+                          obscureText: !_verPassword,
+                          decoration: InputDecoration(
+                            labelText: 'Contraseña',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            helperText: _esRegistro
+                                ? 'Al menos ${ReglasAcceso.passwordMin} '
+                                      'caracteres. Una frase es fácil de '
+                                      'recordar.'
+                                : null,
+                            suffixIcon: IconButton(
+                              tooltip: _verPassword
+                                  ? 'Ocultar contraseña'
+                                  : 'Mostrar contraseña',
+                              onPressed: () =>
+                                  setState(() => _verPassword = !_verPassword),
+                              icon: Icon(
+                                _verPassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
+                            ),
+                          ),
+                          autofillHints: [
+                            _esRegistro
+                                ? AutofillHints.newPassword
+                                : AutofillHints.password,
+                          ],
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          textInputAction: _esRegistro
+                              ? TextInputAction.next
+                              : TextInputAction.done,
+                          onFieldSubmitted: _esRegistro
+                              ? null
+                              : (_) => _enviar(),
+                          validator: _esRegistro
+                              ? (v) => ReglasAcceso.validarPasswordNueva(
+                                  v,
+                                  _alias.text,
+                                )
+                              : (v) => (v ?? '').isEmpty
+                                    ? 'Escribe tu contraseña'
+                                    : null,
+                        ),
+                        if (_esRegistro) ...[
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            key: const Key('repetida'),
+                            controller: _repetida,
+                            obscureText: !_verPassword,
+                            decoration: const InputDecoration(
+                              labelText: 'Repite la contraseña',
+                              prefixIcon: Icon(Icons.lock_outline),
+                            ),
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _enviar(),
+                            validator: (v) => v == _password.text
+                                ? null
+                                : 'Las contraseñas no coinciden',
+                          ),
+                        ],
+                        if (_error case final error?) ...[
+                          const SizedBox(height: 16),
+                          _Mensaje(
+                            texto: error.mensaje,
+                            icono: Icons.error_outline,
+                            esError: true,
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        FilledButton(
+                          onPressed: _enviando || bloqueo > 0 ? null : _enviar,
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(52),
+                          ),
+                          child: ValueListenableBuilder<bool>(
+                            valueListenable: despertando,
+                            builder: (context, dormido, _) => Text(
+                              bloqueo > 0
+                                  ? 'Espera $bloqueo s'
+                                  : !_enviando
+                                  ? (_esRegistro ? 'Crear cuenta' : 'Entrar')
+                                  : dormido
+                                  ? 'Despertando el servidor…'
+                                  : (_esRegistro ? 'Creando…' : 'Entrando…'),
                             ),
                           ),
                         ),
-                        autofillHints: [
-                          _esRegistro
-                              ? AutofillHints.newPassword
-                              : AutofillHints.password,
-                        ],
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        textInputAction: _esRegistro
-                            ? TextInputAction.next
-                            : TextInputAction.done,
-                        onFieldSubmitted: _esRegistro ? null : (_) => _enviar(),
-                        validator: _esRegistro
-                            ? (v) => ReglasAcceso.validarPasswordNueva(
-                                v,
-                                _alias.text,
-                              )
-                            : (v) => (v ?? '').isEmpty
-                                  ? 'Escribe tu contraseña'
-                                  : null,
-                      ),
-                      if (_esRegistro) ...[
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          key: const Key('repetida'),
-                          controller: _repetida,
-                          obscureText: !_verPassword,
-                          decoration: const InputDecoration(
-                            labelText: 'Repite la contraseña',
-                            prefixIcon: Icon(Icons.lock_outline),
-                          ),
-                          autocorrect: false,
-                          enableSuggestions: false,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _enviar(),
-                          validator: (v) => v == _password.text
-                              ? null
-                              : 'Las contraseñas no coinciden',
-                        ),
-                      ],
-                      if (_error case final error?) ...[
-                        const SizedBox(height: 16),
-                        _Mensaje(
-                          texto: error.mensaje,
-                          icono: Icons.error_outline,
-                          esError: true,
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      FilledButton(
-                        onPressed: _enviando || bloqueo > 0 ? null : _enviar,
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size.fromHeight(52),
-                        ),
-                        child: ValueListenableBuilder<bool>(
-                          valueListenable: despertando,
-                          builder: (context, dormido, _) => Text(
-                            bloqueo > 0
-                                ? 'Espera $bloqueo s'
-                                : !_enviando
-                                ? (_esRegistro ? 'Crear cuenta' : 'Entrar')
-                                : dormido
-                                ? 'Despertando el servidor…'
-                                : (_esRegistro ? 'Creando…' : 'Entrando…'),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _enviando ? null : _cambiarModo,
+                          child: Text(
+                            _esRegistro
+                                ? '¿Ya tienes cuenta? Inicia sesión'
+                                : '¿No tienes cuenta? Regístrate',
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: _enviando ? null : _cambiarModo,
-                        child: Text(
-                          _esRegistro
-                              ? '¿Ya tienes cuenta? Inicia sesión'
-                              : '¿No tienes cuenta? Regístrate',
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../campus/controlador.dart';
 import '../campus/juego.dart';
 import '../campus/modelo.dart';
-import '../identidad.dart';
+import '../tema/temas.dart';
 import '../models/estadistica.dart';
 import '../models/estudiante.dart';
 import '../providers.dart';
@@ -216,7 +216,10 @@ class _Leyenda extends StatelessWidget {
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final colores = ColoresEstado.of(context);
+    final paleta = PaletaCampus.de(tema);
     final estilo = tema.textTheme.labelMedium;
+    Widget muestra(Color color, {Color? raya}) =>
+        _MuestraVentana(color: color, raya: raya, borde: paleta.bordeMuestra);
     Widget item(Widget muestra, String texto) => Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -232,19 +235,15 @@ class _Leyenda extends StatelessWidget {
         runSpacing: 4,
         children: [
           item(
-            _MuestraVentana(color: colores.riesgo, raya: colores.onRiesgo),
+            muestra(colores.riesgo, raya: colores.onRiesgo),
             'En riesgo ${campus.enRiesgo}',
           ),
           item(
-            _MuestraVentana(color: colores.ok),
+            muestra(colores.ok),
             'Sin riesgo ${campus.total - campus.enRiesgo}',
           ),
-          item(
-            _MuestraVentana(
-              color: tema.colorScheme.onSurface.withValues(alpha: 0.1),
-            ),
-            'Vacía',
-          ),
+          // El mismo color que las ventanas vacías del mapa.
+          item(muestra(paleta.vacia), 'Vacía'),
         ],
       ),
     );
@@ -253,28 +252,38 @@ class _Leyenda extends StatelessWidget {
 
 /// Una ventana de muestra para la leyenda (igual que en el mapa).
 class _MuestraVentana extends StatelessWidget {
-  const _MuestraVentana({required this.color, this.raya});
+  const _MuestraVentana({required this.color, required this.borde, this.raya});
 
   final Color color;
+  final Color borde;
   final Color? raya;
 
   @override
   Widget build(BuildContext context) => CustomPaint(
-    size: const Size(10, 13),
-    painter: _PintorMuestra(color, raya),
+    size: const Size(11, 14),
+    painter: _PintorMuestra(color, raya, borde),
   );
 }
 
 class _PintorMuestra extends CustomPainter {
-  _PintorMuestra(this.color, this.raya);
+  _PintorMuestra(this.color, this.raya, this.borde);
 
   final Color color;
   final Color? raya;
+  final Color borde;
 
   @override
   void paint(Canvas canvas, Size size) {
     final r = Offset.zero & size;
-    canvas.drawRect(r, Paint()..color = color);
+    canvas
+      ..drawRect(r, Paint()..color = color)
+      ..drawRect(
+        r.deflate(0.5),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = borde,
+      );
     if (raya case final c?) {
       canvas.drawLine(
         r.bottomLeft + const Offset(2, -2),
@@ -289,7 +298,7 @@ class _PintorMuestra extends CustomPainter {
 
   @override
   bool shouldRepaint(_PintorMuestra old) =>
-      old.color != color || old.raya != raya;
+      old.color != color || old.raya != raya || old.borde != borde;
 }
 
 /// Los edificios como lista: accesible para lectores de pantalla y teclado

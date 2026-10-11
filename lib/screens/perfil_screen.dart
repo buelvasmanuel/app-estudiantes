@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../juego/juego_api.dart';
 import '../juego/modelo.dart';
 import '../models/sesion.dart';
+import '../preferencias.dart';
 import '../providers.dart';
 import '../router.dart';
+import '../tema/temas.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
 
@@ -58,6 +60,8 @@ class _Detective extends ConsumerWidget {
                   _Cifras(progreso: p),
                   const SizedBox(height: 24),
                   _Insignias(insignias: p.insignias),
+                  const SizedBox(height: 24),
+                  const AjustesJuego(),
                   if (_esDocente(ref)) ...[
                     const SizedBox(height: 24),
                     OutlinedButton.icon(
@@ -439,6 +443,57 @@ class _Tabla extends StatelessWidget {
             style: tema.textTheme.bodySmall,
           ),
         ],
+      ],
+    );
+  }
+}
+
+/// Tema, sonidos y tutorial. Se guardan en el dispositivo.
+class AjustesJuego extends ConsumerWidget {
+  const AjustesJuego({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tema = ref.watch(temaProvider);
+    final sonidos = ref.watch(sonidosActivosProvider);
+    final estilo = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Ajustes', style: estilo.titleMedium),
+        const SizedBox(height: 12),
+        Text('Tema', style: estilo.labelLarge),
+        const SizedBox(height: 6),
+        SegmentedButton<TemaJuego>(
+          key: const Key('selector-tema'),
+          segments: [
+            for (final t in TemaJuego.values)
+              ButtonSegment(
+                value: t,
+                icon: Icon(t.icono),
+                label: Text(t.nombre),
+              ),
+          ],
+          selected: {tema},
+          onSelectionChanged: (s) =>
+              ref.read(temaProvider.notifier).elegir(s.first),
+        ),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          key: const Key('interruptor-sonidos'),
+          contentPadding: EdgeInsets.zero,
+          secondary: Icon(sonidos ? Icons.volume_up : Icons.volume_off),
+          title: const Text('Sonidos'),
+          subtitle: const Text('Efectos cortos al acertar, rescatar o ganar'),
+          value: sonidos,
+          onChanged: ref.read(sonidosActivosProvider.notifier).activar,
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.school_outlined),
+          title: const Text('Ver el tutorial otra vez'),
+          onTap: () => ref.read(tutorialVistoProvider.notifier).marcar(false),
+        ),
       ],
     );
   }

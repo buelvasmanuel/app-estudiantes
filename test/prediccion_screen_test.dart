@@ -75,7 +75,7 @@ void main() {
         matching: find.byType(Card),
       ),
     );
-    expect(tarjeta.color, ColoresEstado.claro.riesgoContenedor);
+    expect(tarjeta.color, ColoresEstado.expediente.riesgoContenedor);
 
     // Mover un slider marca el resultado como desactualizado.
     await tester.drag(find.byType(Slider).first, const Offset(200, 0));
@@ -105,7 +105,7 @@ void main() {
         matching: find.byType(Card),
       ),
     );
-    expect(tarjeta.color, ColoresEstado.claro.okContenedor);
+    expect(tarjeta.color, ColoresEstado.expediente.okContenedor);
   });
 
   testWidgets('modelo sin entrenar (503) muestra el mensaje y Reintentar', (

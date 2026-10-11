@@ -85,7 +85,7 @@ class _PrediccionScreenState extends ConsumerState<PrediccionScreen> {
     });
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Predicción de riesgo'),
+        title: const Text('Predicción'),
         bottom: widget.pestanas,
         actions: const [MenuCuenta()],
       ),

@@ -1,7 +1,9 @@
 // Prueba de extremo a extremo contra la API REAL (no simulada).
 //
-// Requiere la API corriendo:  uvicorn app.main:app --reload --host 0.0.0.0
-// Ejecutar:                    flutter test integration_test -d linux
+// Necesita una API con /auth y una cuenta de prueba:
+//   flutter test integration_test/app_real_test.dart -d linux \
+//     --dart-define=API_URL=https://api-tienda-wjac.onrender.com \
+//     --dart-define=ALIAS=… --dart-define=PASSWORD=…
 import 'package:app_estudiantes/models/estadistica.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:app_estudiantes/router.dart';
@@ -30,7 +32,10 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('las pestañas cargan datos de la API real', (tester) async {
-    await tester.pumpWidget(appReal(inicial: Rutas.estudiantes));
+    final tokens = (await tester.runAsync(sesionReal))!;
+    await tester.pumpWidget(
+      appReal(tokens: tokens, inicial: Rutas.estudiantes),
+    );
 
     // --- Estudiantes ---
     await esperarA(tester, find.byType(ListTile));
@@ -44,7 +49,8 @@ void main() {
     // --- Gráficas: los 6 tipos ---
     await tester.tap(find.text('Gráficas'));
     await esperarA(tester, find.byType(BarChart));
-    for (final tipo in TipoEstadistica.values) {
+    // La primera (por carrera) ya está a la vista.
+    for (final tipo in TipoEstadistica.values.skip(1)) {
       await tester.tap(find.byType(DropdownMenu<TipoEstadistica>));
       await tester.pumpAndSettle();
       await tester.tap(find.text(tipo.nombre).last);

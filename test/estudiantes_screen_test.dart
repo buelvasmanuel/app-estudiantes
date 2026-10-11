@@ -61,7 +61,7 @@ void main() {
     await tester.tap(find.text('Reintentar'));
     await tester.pumpAndSettle();
 
-    expect(registro, hasLength(2));
+    expect(sinProgreso(registro), hasLength(2));
     expect(find.text('Jorge Rodríguez'), findsOneWidget);
   });
 }

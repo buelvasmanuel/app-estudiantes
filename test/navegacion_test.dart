@@ -22,21 +22,24 @@ void main() {
     final api = apiFalsa(_rutasCompletas(), registro: registro);
     await tester.pumpWidget(appDePrueba(api));
     await tester.pumpAndSettle();
-    expect(registro, ['GET /estudiantes/']);
+    expect(sinProgreso(registro), ['GET /estudiantes/']);
 
     await tester.tap(find.text('Gráficas'));
     await tester.pumpAndSettle();
-    expect(registro.last, 'GET /estudiantes/estadisticas/por-carrera');
+    expect(
+      sinProgreso(registro).last,
+      'GET /estudiantes/estadisticas/por-carrera',
+    );
 
     await tester.tap(find.text('Predicción'));
     await tester.pumpAndSettle();
-    expect(registro.last, 'GET /prediccion/metricas');
+    expect(sinProgreso(registro).last, 'GET /prediccion/metricas');
 
     await tester.tap(find.text('Estudiantes'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Gráficas'));
     await tester.pumpAndSettle();
-    expect(registro, hasLength(3));
+    expect(sinProgreso(registro), hasLength(3));
   });
 
   testWidgets('cambiar de pestaña conserva la búsqueda', (tester) async {

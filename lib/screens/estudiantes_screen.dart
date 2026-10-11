@@ -12,7 +12,10 @@ import '../widgets/promedio_badge.dart';
 
 /// Pestaña 1: listado de estudiantes con buscador, filtro y pull-to-refresh.
 class EstudiantesScreen extends ConsumerStatefulWidget {
-  const EstudiantesScreen({super.key, this.carrera});
+  const EstudiantesScreen({super.key, this.carrera, this.pestanas});
+
+  /// El selector de la pestaña Datos (`SelectorDatos`), si va dentro de ella.
+  final PreferredSizeWidget? pestanas;
 
   /// Si no es `null`, solo se muestran los de esa carrera (llega desde el
   /// expediente de un edificio del Campus).
@@ -61,6 +64,7 @@ class _EstudiantesScreenState extends ConsumerState<EstudiantesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Estudiantes'),
+        bottom: widget.pestanas,
         actions: [
           if (estudiantes != null)
             IconButton(

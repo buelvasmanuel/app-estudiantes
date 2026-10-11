@@ -103,90 +103,110 @@ double probabilidadSimulada(int horas, int asistencia) =>
     (0.8123 - 0.03 * (horas - 6) - 0.02 * (asistencia - 58)).clamp(0.01, 0.99);
 
 /// API simulada del Laboratorio. [registro] guarda `MÉTODO ruta`.
-ApiService laboratorioFalso({List<String>? registro, bool sinCasos = false}) =>
-    ApiService(
-      baseUrl: 'http://api.test',
-      client: MockClient((peticion) async {
-        final ruta = peticion.url.path;
-        registro?.add('${peticion.method} $ruta');
-        final cuerpo = peticion.body.isEmpty
-            ? const <String, Object?>{}
-            : jsonDecode(peticion.body) as Map<String, Object?>;
-        switch (ruta) {
-          case '/laboratorio/casos':
-            return respuestaJson({
-              'casos': sinCasos
-                  ? <Object?>[]
-                  : [
-                      {
-                        'estudiante_id': 17,
-                        'nombre': 'Ana',
-                        'apellido': 'Gómez',
-                        'carrera': 'Medicina',
-                        'semestre': 2,
-                        'probabilidad': 0.8123,
-                      },
-                    ],
-              'presupuesto': 5,
-              'objetivo': 0.5,
-            });
-          case '/laboratorio/casos/17':
-            return respuestaJson(casoJson());
-          case '/prediccion/riesgo/lote':
-            final entradas = (cuerpo['entradas']! as List<Object?>)
-                .cast<Map<String, Object?>>();
-            return respuestaJson({
-              'resultados': [
-                for (final e in entradas)
+/// Con [conProgreso] responde como la v1.1 del contrato (XP, récord,
+/// insignias nuevas y progreso en `…/resolver`).
+ApiService laboratorioFalso({
+  List<String>? registro,
+  bool sinCasos = false,
+  bool conProgreso = false,
+}) => ApiService(
+  baseUrl: 'http://api.test',
+  client: MockClient((peticion) async {
+    final ruta = peticion.url.path;
+    registro?.add('${peticion.method} $ruta');
+    final cuerpo = peticion.body.isEmpty
+        ? const <String, Object?>{}
+        : jsonDecode(peticion.body) as Map<String, Object?>;
+    switch (ruta) {
+      case '/laboratorio/casos':
+        return respuestaJson({
+          'casos': sinCasos
+              ? <Object?>[]
+              : [
                   {
-                    'probabilidad': probabilidadSimulada(
-                      e['horas_estudio']! as int,
-                      e['asistencia']! as int,
-                    ),
-                    'en_riesgo': false,
+                    'estudiante_id': 17,
+                    'nombre': 'Ana',
+                    'apellido': 'Gómez',
+                    'carrera': 'Medicina',
+                    'semestre': 2,
+                    'probabilidad': 0.8123,
                   },
-              ],
-              'modelo': {'nombre': 'x', 'version': 'y'},
-              'aviso': avisoModelo,
-            });
-          case '/laboratorio/casos/17/resolver':
-            final codigos = (cuerpo['intervenciones']! as List<Object?>)
-                .cast<String>();
-            final e = codigos.where((c) => c == 'estudio').length;
-            final t = codigos.where((c) => c == 'tutoria').length;
-            final fichas = e + 2 * t;
-            final horas = (6 + 2 * e).clamp(0, 40);
-            final asistencia = (58 + 10 * t).clamp(0, 100);
-            final p = probabilidadSimulada(horas, asistencia);
-            final logrado = p < 0.5;
-            const optimas = 4;
-            return respuestaJson({
-              'logrado': logrado,
-              'estrellas': !logrado
-                  ? 0
-                  : fichas <= optimas
-                  ? 3
-                  : fichas == optimas + 1
-                  ? 2
-                  : 1,
-              'fichas_usadas': fichas,
-              'fichas_optimas': optimas,
-              'probabilidad_inicial': 0.8123,
-              'probabilidad_final': p,
-              'estado_final': {
-                'horas_estudio': horas,
-                'asistencia': asistencia,
+                ],
+          'presupuesto': 5,
+          'objetivo': 0.5,
+        });
+      case '/laboratorio/casos/17':
+        return respuestaJson(casoJson());
+      case '/prediccion/riesgo/lote':
+        final entradas = (cuerpo['entradas']! as List<Object?>)
+            .cast<Map<String, Object?>>();
+        return respuestaJson({
+          'resultados': [
+            for (final e in entradas)
+              {
+                'probabilidad': probabilidadSimulada(
+                  e['horas_estudio']! as int,
+                  e['asistencia']! as int,
+                ),
+                'en_riesgo': false,
               },
-              'solucion_optima': {
-                'estudio': 0,
-                'tutoria': 2,
-                'fichas': 4,
-                'probabilidad': probabilidadSimulada(6, 78),
-              },
-              'explicacion_final': explicacionJson(probabilidad: p),
-              'aviso': avisoModelo,
-            });
-        }
-        throw http.ClientException('Connection refused', peticion.url);
-      }),
-    );
+          ],
+          'modelo': {'nombre': 'x', 'version': 'y'},
+          'aviso': avisoModelo,
+        });
+      case '/laboratorio/casos/17/resolver':
+        final codigos = (cuerpo['intervenciones']! as List<Object?>)
+            .cast<String>();
+        final e = codigos.where((c) => c == 'estudio').length;
+        final t = codigos.where((c) => c == 'tutoria').length;
+        final fichas = e + 2 * t;
+        final horas = (6 + 2 * e).clamp(0, 40);
+        final asistencia = (58 + 10 * t).clamp(0, 100);
+        final p = probabilidadSimulada(horas, asistencia);
+        final logrado = p < 0.5;
+        const optimas = 4;
+        return respuestaJson({
+          'logrado': logrado,
+          'estrellas': !logrado
+              ? 0
+              : fichas <= optimas
+              ? 3
+              : fichas == optimas + 1
+              ? 2
+              : 1,
+          'fichas_usadas': fichas,
+          'fichas_optimas': optimas,
+          'probabilidad_inicial': 0.8123,
+          'probabilidad_final': p,
+          'estado_final': {'horas_estudio': horas, 'asistencia': asistencia},
+          'solucion_optima': {
+            'estudio': 0,
+            'tutoria': 2,
+            'fichas': 4,
+            'probabilidad': probabilidadSimulada(6, 78),
+          },
+          'explicacion_final': explicacionJson(probabilidad: p),
+          'aviso': avisoModelo,
+          if (conProgreso) ...{
+            'xp_ganada': logrado ? 30 : 0,
+            'record_estrellas': logrado ? 3 : 0,
+            'insignias_nuevas': [
+              if (logrado)
+                {
+                  'codigo': 'rescate_perfecto',
+                  'nombre': 'Rescate perfecto',
+                  'descripcion': 'Logra un rescate con 3 estrellas.',
+                  'obtenida_en': '2026-10-11T18:04:05Z',
+                },
+            ],
+            'progreso': {
+              'xp': 160,
+              'nivel': 'Investigador',
+              'subio_de_nivel': logrado,
+            },
+          },
+        });
+    }
+    throw http.ClientException('Connection refused', peticion.url);
+  }),
+);

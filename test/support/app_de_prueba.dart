@@ -8,11 +8,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Una sesión ya iniciada que no caduca durante el test.
-Tokens tokensDePrueba() => Tokens(
+Tokens tokensDePrueba({Rol rol = Rol.jugador}) => Tokens(
   access: 'access-de-prueba',
   accessCaduca: DateTime.now().add(const Duration(hours: 1)),
   refresh: 'refresh-de-prueba',
-  usuario: const Usuario(id: 1, alias: 'Detective_Ana', rol: Rol.jugador),
+  usuario: Usuario(id: 1, alias: 'Detective_Ana', rol: rol),
 );
 
 /// La app completa (router, pestañas, tema) con [api] en lugar de la real,
@@ -25,6 +25,7 @@ Widget appDePrueba(
   String inicial = Rutas.estudiantes,
   bool conSesion = true,
   AlmacenRefresh? almacen,
+  Rol rol = Rol.jugador,
 }) => ProviderScope(
   retry: sinReintentos,
   overrides: [
@@ -32,7 +33,7 @@ Widget appDePrueba(
     almacenRefreshProvider.overrideWithValue(almacen ?? AlmacenEnMemoria()),
     if (conSesion)
       sesionProvider.overrideWith(
-        (ref) => crearSesion(ref, tokens: tokensDePrueba()),
+        (ref) => crearSesion(ref, tokens: tokensDePrueba(rol: rol)),
       ),
     routerProvider.overrideWith((ref) {
       final router = crearRouter(

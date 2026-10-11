@@ -1,5 +1,6 @@
 // Tipos del Laboratorio de Rescate, tal como los define
 // docs/CONTRATO_LABORATORIO.md (repo api-tienda).
+import '../juego/modelo.dart';
 import '../models/json_utils.dart';
 import '../models/prediccion.dart';
 
@@ -314,6 +315,8 @@ class ResultadoRescate {
     required this.solucionOptima,
     required this.explicacionFinal,
     required this.aviso,
+    this.recordEstrellas,
+    this.recompensa,
   });
 
   final bool logrado;
@@ -325,6 +328,12 @@ class ResultadoRescate {
   final SolucionOptima solucionOptima;
   final Explicacion explicacionFinal;
   final String aviso;
+
+  /// v1.1: el mejor resultado del jugador con este estudiante.
+  final int? recordEstrellas;
+
+  /// v1.1: XP, insignias nuevas y progreso. `null` con un servidor v1.
+  final Recompensa? recompensa;
 
   factory ResultadoRescate.fromJson(Object? json) {
     final m = comoMapa(json, 'resultado del rescate');
@@ -338,6 +347,8 @@ class ResultadoRescate {
       solucionOptima: SolucionOptima.fromJson(m['solucion_optima']),
       explicacionFinal: Explicacion.fromJson(m['explicacion_final']),
       aviso: leerString(m, 'aviso'),
+      recordEstrellas: leerNumOpcional(m, 'record_estrellas')?.toInt(),
+      recompensa: Recompensa.desde(m),
     );
   }
 }

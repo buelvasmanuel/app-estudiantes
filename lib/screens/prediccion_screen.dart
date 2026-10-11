@@ -11,7 +11,10 @@ import '../widgets/menu_cuenta.dart';
 /// Pestaña 3: formulario que pide al modelo de la API si un estudiante con
 /// esos datos estaría en riesgo académico.
 class PrediccionScreen extends ConsumerStatefulWidget {
-  const PrediccionScreen({super.key});
+  const PrediccionScreen({super.key, this.pestanas});
+
+  /// El selector de la pestaña Datos (`SelectorDatos`), si va dentro de ella.
+  final PreferredSizeWidget? pestanas;
 
   @override
   ConsumerState<PrediccionScreen> createState() => _PrediccionScreenState();
@@ -83,6 +86,7 @@ class _PrediccionScreenState extends ConsumerState<PrediccionScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Predicción de riesgo'),
+        bottom: widget.pestanas,
         actions: const [MenuCuenta()],
       ),
       body: switch (ref.watch(metricasProvider)) {

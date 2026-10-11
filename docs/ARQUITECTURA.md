@@ -222,3 +222,11 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   petición por caso). Búho y medidor tras `AparienciaLaboratorio` (Rive en
   la Fase 7). `Semantics` con `container: true` para que el lector de
   pantalla no funda los textos de la pantalla en un solo nodo.
+- **Fase 5, juego** (`lib/juego/`, CONTRATO_JUEGO v1 + LABORATORIO v1.1):
+  navegación en 5 pestañas (Campus · Casos · Laboratorio · Datos · Perfil);
+  «Datos» es un `StatefulShellRoute` anidado con Estudiantes, Gráficas y
+  Predicción (mismas rutas). Chip de nivel en todas las barras, celebración
+  protagonista, perfil con insignias y ranking, panel del docente
+  (`/docente`, alta en lote + jugadores). `usuarioIdProvider` rehace lo del
+  jugador al cambiar de cuenta. Las pruebas de integración contra la API real
+  inician sesión con una cuenta de prueba (`--dart-define=ALIAS/PASSWORD`).

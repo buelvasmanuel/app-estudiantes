@@ -43,6 +43,18 @@ GestorSesion crearSesion(Ref ref, {Tokens? tokens}) {
   return sesion;
 }
 
+/// Id del usuario con sesión (o `null`). Cambia al entrar, salir o cambiar
+/// de cuenta; no con cada renovación de tokens (es un número, no el objeto).
+/// Lo que depende del jugador (progreso, ranking...) lo vigila para
+/// rehacerse con otra cuenta.
+final usuarioIdProvider = Provider<int?>((ref) {
+  final sesion = ref.watch(sesionProvider);
+  void cambio() => ref.invalidateSelf();
+  sesion.addListener(cambio);
+  ref.onDispose(() => sesion.removeListener(cambio));
+  return sesion.usuario?.id;
+});
+
 /// Sin reintentos automáticos.
 ///
 /// Riverpod 3 reintenta por defecto los providers que fallan. Aquí no

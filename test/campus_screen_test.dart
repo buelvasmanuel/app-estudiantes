@@ -128,7 +128,7 @@ void main() {
   testWidgets('en otra pestaña el juego se pausa', (tester) async {
     final campus = await _abrir(tester);
     expect(campus.juego.paused, isFalse);
-    await tester.tap(find.text('Gráficas'));
+    await tester.tap(find.text('Datos'));
     await _avanzar(tester, 600);
     expect(campus.juego.paused, isTrue);
     await tester.tap(find.text('Campus'));

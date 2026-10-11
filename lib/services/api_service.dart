@@ -18,6 +18,7 @@ class ApiException implements Exception {
     this.codigo,
     this.reintentarEn,
     this.esTimeout = false,
+    this.detalle,
   });
 
   final String mensaje;
@@ -31,6 +32,10 @@ class ApiException implements Exception {
 
   /// Cabecera `Retry-After` de un 429: cuánto esperar antes de reintentar.
   final Duration? reintentarEn;
+
+  /// El `detail` de un error con código, entero: algunos traen datos extra
+  /// (`aliases` en un 409 de `/usuarios/lote`, `opciones` en un 422...).
+  final Map<String, Object?>? detalle;
 
   /// `true` si no hubo respuesta porque se agotó el tiempo de espera (la API
   /// pudo recibir y procesar la petición); `false` si la conexión falló.
@@ -286,6 +291,7 @@ class ApiService {
           statusCode: respuesta.statusCode,
           codigo: codigo,
           reintentarEn: segundos == null ? null : Duration(seconds: segundos),
+          detalle: detalle as Map<String, Object?>,
         ),
       _ => ApiException(
         _mensajeDeError(respuesta.statusCode, datos),

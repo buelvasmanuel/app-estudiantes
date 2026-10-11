@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../juego/celebracion.dart';
+import '../juego/juego_api.dart';
+import '../juego/modelo.dart';
 import '../laboratorio/apariencia.dart';
 import '../laboratorio/explicacion_vista.dart';
 import '../laboratorio/modelo.dart';
@@ -13,6 +16,7 @@ import '../router.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
 import '../widgets/estado_vistas.dart';
+import '../widgets/menu_cuenta.dart';
 
 /// Un caso del Laboratorio: aplicar fichas, ver el medidor y confirmar.
 class RescateScreen extends ConsumerStatefulWidget {
@@ -39,7 +43,12 @@ class _RescateScreenState extends ConsumerState<RescateScreen> {
       final r = await ref
           .read(laboratorioApiProvider)
           .resolver(widget.estudianteId, rescate.codigos);
-      if (mounted) setState(() => _resultado = r);
+      if (!mounted) return;
+      setState(() => _resultado = r);
+      if (r.recompensa case final recompensa?) {
+        progresoCambiado(ref);
+        await celebrar(context, recompensa);
+      }
     } on ApiException catch (e) {
       if (mounted) setState(() => _errorResolver = e);
     } finally {
@@ -56,7 +65,10 @@ class _RescateScreenState extends ConsumerState<RescateScreen> {
   Widget build(BuildContext context) {
     final estado = ref.watch(casoProvider(widget.estudianteId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Rescate')),
+      appBar: AppBar(
+        title: const Text('Rescate'),
+        actions: const [MenuCuenta()],
+      ),
       body: switch (estado) {
         AsyncValue(value: final Caso caso) => switch (_resultado) {
           final r? => _VistaResultado(
@@ -417,7 +429,12 @@ class _VistaResultado extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Estrellas(cantidad: r.estrellas),
+              // Si hay celebración (insignia, nivel), ella es la animación
+              // protagonista: las estrellas aparecen quietas.
+              Estrellas(
+                cantidad: r.estrellas,
+                animar: !(r.recompensa?.hayCelebracion ?? false),
+              ),
               const SizedBox(height: 8),
               Text(
                 r.logrado ? '¡Rescatado!' : 'Sigue en riesgo',
@@ -443,6 +460,10 @@ class _VistaResultado extends ConsumerWidget {
                 textAlign: TextAlign.center,
                 style: tema.textTheme.bodyMedium,
               ),
+              if (r.recompensa case final recompensa?) ...[
+                const SizedBox(height: 12),
+                _Recompensa(recompensa: recompensa, record: r.recordEstrellas),
+              ],
               const SizedBox(height: 16),
               _Bocadillo(
                 buho: apariencia.buho(animo: buho.animo),
@@ -474,9 +495,12 @@ class _VistaResultado extends ConsumerWidget {
 /// (aparecen una tras otra en < 1 s; un toque la salta; nada con "reducir
 /// movimiento").
 class Estrellas extends StatefulWidget {
-  const Estrellas({super.key, required this.cantidad});
+  const Estrellas({super.key, required this.cantidad, this.animar = true});
 
   final int cantidad;
+
+  /// `false` cuando otra animación (la celebración) es la protagonista.
+  final bool animar;
 
   @override
   State<Estrellas> createState() => _EstrellasState();
@@ -492,7 +516,7 @@ class _EstrellasState extends State<Estrellas>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
+    if (MediaQuery.disableAnimationsOf(context) || !widget.animar) {
       _animacion.value = 1;
     } else if (_animacion.status == AnimationStatus.dismissed) {
       _animacion.forward();
@@ -533,6 +557,63 @@ class _EstrellasState extends State<Estrellas>
                       : Icons.star_outline_rounded,
                   size: 56,
                   color: color,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// XP del rescate (la decide el servidor: 10 por cada estrella que mejora
+/// el récord con este estudiante).
+class _Recompensa extends StatelessWidget {
+  const _Recompensa({required this.recompensa, required this.record});
+
+  final Recompensa recompensa;
+  final int? record;
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    final r = recompensa;
+    final xp = r.xpGanada;
+    return Card.outlined(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.bolt, color: tema.colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    xp > 0
+                        ? '+$xp XP · ${r.progreso.xp} XP en total'
+                        : 'Sin XP: no mejoras tu récord'
+                              '${record == null ? '' : ' ($record ${record == 1 ? 'estrella' : 'estrellas'})'}'
+                              ' con este estudiante.',
+                    key: const Key('xp-rescate'),
+                    style: tema.textTheme.titleSmall,
+                  ),
+                ),
+              ],
+            ),
+            for (final i in r.insigniasNuevas)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.military_tech_rounded,
+                      color: tema.colorScheme.tertiary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text('Insignia nueva: ${i.nombre}')),
+                  ],
                 ),
               ),
           ],

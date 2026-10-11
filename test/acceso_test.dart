@@ -40,7 +40,10 @@ void main() {
 
     await _entrar(tester);
     expect(find.text('Jorge Rodríguez'), findsOneWidget);
-    expect(servidor.registro, ['POST /auth/login', 'GET /estudiantes/']);
+    expect(sinProgreso(servidor.registro), [
+      'POST /auth/login',
+      'GET /estudiantes/',
+    ]);
   });
 
   testWidgets('credenciales inválidas: muestra el mensaje de la API', (
@@ -93,7 +96,7 @@ void main() {
     await _escribir(tester, 'repetida', 'mi lupa favorita');
     await tester.tap(find.text('Crear cuenta'));
     await tester.pumpAndSettle();
-    expect(servidor.registro.first, 'POST /auth/registro');
+    expect(sinProgreso(servidor.registro).first, 'POST /auth/registro');
     expect(find.text('Jorge Rodríguez'), findsOneWidget);
   });
 
@@ -161,7 +164,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AccesoScreen), findsOneWidget);
-    expect(servidor.registro.last, 'POST /auth/logout');
+    expect(sinProgreso(servidor.registro).last, 'POST /auth/logout');
     expect(await almacen.leer(), isNull);
   });
 

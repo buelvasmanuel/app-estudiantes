@@ -55,10 +55,11 @@ void main() {
     tester.view.physicalSize = const Size(412, 915);
     addTearDown(tester.view.reset);
 
+    final tokens = (await tester.runAsync(sesionReal))!;
     await tester.pumpWidget(
       RepaintBoundary(
         key: clave,
-        child: appReal(inicial: Rutas.estudiantes),
+        child: appReal(tokens: tokens, inicial: Rutas.estudiantes),
       ),
     );
 

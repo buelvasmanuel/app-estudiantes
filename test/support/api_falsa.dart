@@ -74,3 +74,8 @@ const metricasJson = {
     'semestre': -0.089,
   },
 };
+
+/// [registro] sin las peticiones del chip de nivel (`GET /juego/progreso`),
+/// que hace la barra superior de cada pantalla.
+List<String> sinProgreso(List<String> registro) =>
+    registro.where((r) => !r.endsWith('/juego/progreso')).toList();

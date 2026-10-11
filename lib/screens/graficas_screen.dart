@@ -10,7 +10,10 @@ import '../widgets/grafica_barras.dart';
 
 /// Pestaña 2: estadísticas de los estudiantes en una gráfica de barras.
 class GraficasScreen extends ConsumerStatefulWidget {
-  const GraficasScreen({super.key});
+  const GraficasScreen({super.key, this.pestanas});
+
+  /// El selector de la pestaña Datos (`SelectorDatos`), si va dentro de ella.
+  final PreferredSizeWidget? pestanas;
 
   @override
   ConsumerState<GraficasScreen> createState() => _GraficasScreenState();
@@ -46,6 +49,7 @@ class _GraficasScreenState extends ConsumerState<GraficasScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gráficas'),
+        bottom: widget.pestanas,
         actions: [
           IconButton(
             tooltip: 'Actualizar',

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../juego/juego_api.dart';
+import '../models/sesion.dart';
 import '../providers.dart';
+import '../router.dart';
 import '../services/api_service.dart';
 
-enum _Opcion { cerrar, cerrarTodas }
+enum _Opcion { perfil, docente, cerrar, cerrarTodas }
 
 /// Botón de la cuenta (en la barra superior de cada pestaña): muestra el
 /// alias y permite cerrar la sesión.
@@ -19,6 +23,10 @@ class MenuCuenta extends ConsumerWidget {
 
     Future<void> elegir(_Opcion opcion) async {
       switch (opcion) {
+        case _Opcion.perfil:
+          context.go(Rutas.perfil);
+        case _Opcion.docente:
+          await context.push(Rutas.docente);
         case _Opcion.cerrar:
           await sesion.cerrarSesion();
         case _Opcion.cerrarTodas:
@@ -54,7 +62,8 @@ class MenuCuenta extends ConsumerWidget {
       }
     }
 
-    return PopupMenuButton<_Opcion>(
+    final esDocente = usuario.rol == Rol.docente || usuario.rol == Rol.admin;
+    final menu = PopupMenuButton<_Opcion>(
       tooltip: 'Cuenta',
       icon: CircleAvatar(
         radius: 16,
@@ -72,6 +81,23 @@ class MenuCuenta extends ConsumerWidget {
         ),
         const PopupMenuDivider(),
         const PopupMenuItem(
+          value: _Opcion.perfil,
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.badge_outlined),
+            title: Text('Mi perfil'),
+          ),
+        ),
+        if (esDocente)
+          const PopupMenuItem(
+            value: _Opcion.docente,
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.co_present_outlined),
+              title: Text('Panel del docente'),
+            ),
+          ),
+        const PopupMenuItem(
           value: _Opcion.cerrar,
           child: ListTile(
             contentPadding: EdgeInsets.zero,
@@ -88,6 +114,37 @@ class MenuCuenta extends ConsumerWidget {
           ),
         ),
       ],
+    );
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [const ChipNivel(), menu],
+    );
+  }
+}
+
+/// Nivel y XP del jugador, siempre a la vista. Lleva al perfil.
+class ChipNivel extends ConsumerWidget {
+  const ChipNivel({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final progreso = ref.watch(progresoProvider).value;
+    // Sin datos (cargando, error, servidor sin /juego): no se muestra.
+    if (progreso == null) return const SizedBox.shrink();
+    return Semantics(
+      container: true,
+      button: true,
+      label:
+          'Nivel ${progreso.nivel.numero}, ${progreso.nivel.nombre}, '
+          '${progreso.xp} puntos de experiencia. Abre tu perfil.',
+      excludeSemantics: true,
+      child: ActionChip(
+        key: const Key('chip-nivel'),
+        avatar: const Icon(Icons.bolt, size: 18),
+        label: Text('Nv ${progreso.nivel.numero} · ${progreso.xp} XP'),
+        onPressed: () => context.go(Rutas.perfil),
+        visualDensity: VisualDensity.compact,
+      ),
     );
   }
 }

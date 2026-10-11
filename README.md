@@ -1,15 +1,20 @@
 # Estudiantes
 
-App Flutter (Material 3) que consume la API FastAPI de `api-tienda` y tiene
-cinco pestañas:
+App Flutter (Material 3) que consume la API FastAPI de `api-tienda`: un
+juego de datos («Campus Detective») con cinco pestañas, como en la
+arquitectura de la propuesta (Campus · Casos · Laboratorio · Datos · Perfil).
+**Datos** agrupa las tres herramientas originales (Estudiantes, Gráficas y
+Predicción), que se eligen con un selector en la barra superior.
 
 | Pestaña | Qué hace | Endpoints |
 |---|---|---|
 | **Campus** | Mapa 2.5D (Flame): cada edificio es una carrera, cada piso un semestre y cada ventana un estudiante, roja si está en riesgo. Tocar un edificio abre su expediente; tocar una ventana, la ficha del estudiante | `GET /estudiantes/` |
+| **Casos** | 9 preguntas en 3 niveles que se resuelven mirando los datos (con la gráfica que ayuda como «ficha del caso»). El servidor decide si es correcto y cuánta XP da; el búho da el dato real, la explicación o la pista | `/juego/casos/*` |
 | **Laboratorio** | Juego de rescate: con 5 fichas (plan de estudio, tutoría) hay que bajar de 50 % el riesgo que estima el modelo para un estudiante real. Medidor en vivo, búho guía, estrellas que decide el servidor y el «¿por qué?» con el peso de cada variable | `/laboratorio/*`, `POST /prediccion/riesgo/lote` |
-| **Estudiantes** | Listado con buscador, filtro "en riesgo", indicador de color (promedio < 3.0), pull-to-refresh y pantalla de detalle | `GET /estudiantes/` |
-| **Gráficas** | Gráfica de barras (fl_chart) de 6 estadísticas, con el valor encima de cada barra y un resumen | `GET /estudiantes/estadisticas/{tipo}` |
-| **Predicción** | Formulario (carrera + 4 sliders) que predice el riesgo académico, con el resultado en rojo/verde y las métricas del modelo | `GET /prediccion/metricas`, `POST /prediccion/riesgo` |
+| **Datos → Estudiantes** | Listado con buscador, filtro "en riesgo", indicador de color (promedio < 3.0), pull-to-refresh y pantalla de detalle | `GET /estudiantes/` |
+| **Datos → Gráficas** | Gráfica de barras (fl_chart) de 6 estadísticas, con el valor encima de cada barra y un resumen | `GET /estudiantes/estadisticas/{tipo}` |
+| **Datos → Predicción** | Formulario (carrera + 4 sliders) que predice el riesgo académico, con el resultado en rojo/verde y las métricas del modelo | `GET /prediccion/metricas`, `POST /prediccion/riesgo` |
+| **Perfil** | Nivel, XP y avance, racha, casos, rescates, estrellas e insignias; ranking semanal e histórico. Los docentes entran desde aquí a su panel | `/juego/progreso`, `/juego/ranking` |
 
 <p>
   <img src="docs/capturas/1_estudiantes.png" width="200" alt="Listado de estudiantes">
@@ -199,6 +204,11 @@ lib/
 │   ├── apariencia.dart        # Interfaz búho + medidor (hoy Flutter, mañana Rive)
 │   ├── textos.dart            # Lo que dice el búho ("según el modelo…")
 │   └── explicacion_vista.dart # El "¿por qué?" y el aviso del modelo
+├── juego/                     # Casos, progreso, insignias, ranking (CONTRATO_JUEGO.md)
+│   ├── modelo.dart            # Tipos del contrato (Recompensa, Progreso, Ranking...)
+│   ├── juego_api.dart         # Endpoints y providers (se rehacen al cambiar de cuenta)
+│   ├── celebracion.dart       # Subida de nivel / insignia nueva (≤ 1,2 s, saltable)
+│   └── lote.dart              # Revisión de la lista de alias del docente
 ├── campus/                    # Pestaña Campus
 │   ├── modelo.dart            # Campus y Edificio (pisos = semestres)
 │   ├── disposicion.dart       # Geometría, cámara (Vista) y qué hay bajo un toque
@@ -218,7 +228,11 @@ lib/
 ├── screens/
 │   ├── acceso_screen.dart     # Login, registro y "recuperando sesión"
 │   ├── campus_screen.dart     # Leyenda, mapa, lista de edificios y paneles
-│   ├── laboratorio_screen.dart # Lista de casos
+│   ├── casos_screen.dart      # Casos por nivel
+│   ├── caso_juego_screen.dart # Un caso: ficha, opciones y veredicto
+│   ├── perfil_screen.dart     # Detective (nivel, insignias) y ranking
+│   ├── docente_screen.dart    # Alta de cuentas en lote y lista de jugadores
+│   ├── laboratorio_screen.dart # Lista de casos del Laboratorio
 │   ├── rescate_screen.dart    # Jugar un caso y ver el resultado
 │   ├── estudiantes_screen.dart
 │   ├── estudiante_detalle_screen.dart
@@ -267,8 +281,12 @@ Con la API corriendo, la prueba de extremo a extremo abre la app de verdad y
 comprueba que las 3 pestañas cargan datos reales (y las 6 gráficas):
 
 ```bash
-flutter test integration_test/app_real_test.dart -d linux
+flutter test integration_test/app_real_test.dart -d linux \
+  --dart-define=API_URL=https://api-tienda-wjac.onrender.com \
+  --dart-define=ALIAS=… --dart-define=PASSWORD=…
 ```
+
+(Las pruebas contra la API real inician sesión con esa cuenta de prueba.)
 
 Registro, refresh, logout y login contra la API real (crea la cuenta que se
 indique):
@@ -393,6 +411,49 @@ local en el puerto 8001):
 flutter test integration_test/laboratorio_real_test.dart -d linux \
   --dart-define=API_URL=http://127.0.0.1:8001 \
   --dart-define=ALIAS=Prueba_Frontend_1 --dart-define=PASSWORD='una contraseña larga' \
+  --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
+```
+
+## Casos, progresión y panel del docente
+
+<p>
+  <img src="docs/capturas/13_casos.png" width="200" alt="Lista de casos">
+  <img src="docs/capturas/15_caso_resuelto.png" width="200" alt="Caso resuelto con su explicación">
+  <img src="docs/capturas/16_perfil.png" width="200" alt="Perfil con insignias">
+  <img src="docs/capturas/17_ranking.png" width="200" alt="Ranking">
+</p>
+
+Implementa `docs/CONTRATO_JUEGO.md` v1 y `CONTRATO_LABORATORIO.md` v1.1:
+
+- **Todo lo decide el servidor:** si una respuesta es correcta, la XP, el
+  nivel, las insignias y el ranking. La app solo muestra lo que devuelve.
+- **XP y nivel siempre a la vista:** un chip «Nv 2 · 230 XP» en la barra
+  superior de cada pantalla (lleva al perfil). Tras cada respuesta o rescate
+  se recargan el progreso, el ranking y la lista de casos.
+- **Celebración** (subir de nivel o insignia nueva): es la animación
+  protagonista de ese momento (≤ 1,2 s, un toque la salta, quieta con
+  "reducir movimiento"). Si llega al terminar un rescate, las estrellas
+  aparecen quietas para no competir con ella.
+- **Rescates:** al terminar muestran la XP ganada (10 por cada estrella que
+  mejora tu récord con ese estudiante) y las insignias nuevas. Con un
+  servidor anterior a la v1.1 (sin esos campos) la pantalla sigue igual.
+- **Panel del docente** (roles docente y admin; también en el menú de la
+  cuenta): pegar una lista de alias (uno por línea o separados por comas) y
+  crear hasta 40 cuentas de jugador a la vez. Las contraseñas generadas solo
+  se ven en ese momento: hay un botón «Copiar todas» (para pegar en una hoja
+  de cálculo) y la app avisa antes de salir sin copiarlas. La pestaña
+  «Jugadores» muestra el progreso de cada uno.
+- Sin sesión no se pide nada de `/juego` (la API respondería 401), y al
+  cambiar de cuenta todo lo del jugador se vuelve a pedir.
+
+Prueba de punta a punta (API con `/juego`, un jugador y un docente; crea 2
+cuentas de alumno con alias nuevos):
+
+```bash
+flutter test integration_test/juego_real_test.dart -d linux \
+  --dart-define=API_URL=http://127.0.0.1:8001 \
+  --dart-define=ALIAS=… --dart-define=PASSWORD=… \
+  --dart-define=ALIAS_DOCENTE=… --dart-define=PASSWORD_DOCENTE=… \
   --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
 ```
 

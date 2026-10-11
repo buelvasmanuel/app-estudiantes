@@ -183,6 +183,7 @@ class CampusVistaState extends State<CampusVista> {
               controlador.desplazar(d.focalPointDelta);
             },
             child: Semantics(
+              container: true,
               label:
                   'Mapa del campus: ${campus.edificios.length} edificios, '
                   '${campus.total} estudiantes, ${campus.enRiesgo} en riesgo. '
@@ -302,6 +303,7 @@ class _ListaEdificios extends StatelessWidget {
         itemBuilder: (context, i) {
           final e = controlador.campus.edificios[i];
           return Semantics(
+            container: true,
             label:
                 '${e.carrera}: ${e.total} estudiantes, '
                 '${e.enRiesgo} en riesgo',

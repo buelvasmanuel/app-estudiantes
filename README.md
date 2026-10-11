@@ -1,11 +1,12 @@
 # Estudiantes
 
 App Flutter (Material 3) que consume la API FastAPI de `api-tienda` y tiene
-cuatro pestañas:
+cinco pestañas:
 
 | Pestaña | Qué hace | Endpoints |
 |---|---|---|
 | **Campus** | Mapa 2.5D (Flame): cada edificio es una carrera, cada piso un semestre y cada ventana un estudiante, roja si está en riesgo. Tocar un edificio abre su expediente; tocar una ventana, la ficha del estudiante | `GET /estudiantes/` |
+| **Laboratorio** | Juego de rescate: con 5 fichas (plan de estudio, tutoría) hay que bajar de 50 % el riesgo que estima el modelo para un estudiante real. Medidor en vivo, búho guía, estrellas que decide el servidor y el «¿por qué?» con el peso de cada variable | `/laboratorio/*`, `POST /prediccion/riesgo/lote` |
 | **Estudiantes** | Listado con buscador, filtro "en riesgo", indicador de color (promedio < 3.0), pull-to-refresh y pantalla de detalle | `GET /estudiantes/` |
 | **Gráficas** | Gráfica de barras (fl_chart) de 6 estadísticas, con el valor encima de cada barra y un resumen | `GET /estudiantes/estadisticas/{tipo}` |
 | **Predicción** | Formulario (carrera + 4 sliders) que predice el riesgo académico, con el resultado en rojo/verde y las métricas del modelo | `GET /prediccion/metricas`, `POST /prediccion/riesgo` |
@@ -191,6 +192,13 @@ lib/
 ├── router.dart                # Rutas (go_router) y barra de 4 pestañas
 ├── providers.dart             # Providers de Riverpod (ApiService, sesión y datos)
 ├── config.dart                # URL de la API (--dart-define) y timeout
+├── laboratorio/               # Pestaña Laboratorio (CONTRATO_LABORATORIO.md)
+│   ├── modelo.dart            # Caso, Intervencion, Explicacion, ResultadoRescate
+│   ├── rescate.dart           # Reglas en local (fichas, topes, combinaciones)
+│   ├── laboratorio_api.dart   # Endpoints; todas las combinaciones en 1 petición
+│   ├── apariencia.dart        # Interfaz búho + medidor (hoy Flutter, mañana Rive)
+│   ├── textos.dart            # Lo que dice el búho ("según el modelo…")
+│   └── explicacion_vista.dart # El "¿por qué?" y el aviso del modelo
 ├── campus/                    # Pestaña Campus
 │   ├── modelo.dart            # Campus y Edificio (pisos = semestres)
 │   ├── disposicion.dart       # Geometría, cámara (Vista) y qué hay bajo un toque
@@ -210,6 +218,8 @@ lib/
 ├── screens/
 │   ├── acceso_screen.dart     # Login, registro y "recuperando sesión"
 │   ├── campus_screen.dart     # Leyenda, mapa, lista de edificios y paneles
+│   ├── laboratorio_screen.dart # Lista de casos
+│   ├── rescate_screen.dart    # Jugar un caso y ver el resultado
 │   ├── estudiantes_screen.dart
 │   ├── estudiante_detalle_screen.dart
 │   ├── graficas_screen.dart
@@ -344,6 +354,45 @@ Captura con datos reales (necesita la API):
 ```bash
 flutter test integration_test/campus_test.dart -d linux \
   --dart-define=API_URL=https://api-tienda-wjac.onrender.com \
+  --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
+```
+
+## Laboratorio de rescate
+
+<p>
+  <img src="docs/capturas/10_laboratorio.png" width="200" alt="Casos del laboratorio">
+  <img src="docs/capturas/11_rescate.png" width="200" alt="Rescate en curso">
+  <img src="docs/capturas/12_resultado.png" width="200" alt="Resultado y explicación">
+</p>
+
+Implementa `docs/CONTRATO_LABORATORIO.md` (repo `api-tienda`):
+
+- **Reglas en el servidor.** Costes, efectos y topes de las intervenciones
+  llegan en el catálogo del caso; las **estrellas y la solución óptima las
+  calcula siempre la API** (`…/resolver`). La app solo aplica las fichas en
+  local para mover el medidor.
+- **Medidor sin esperas:** al abrir un caso se piden las probabilidades de
+  **todas** las combinaciones posibles (12 con 5 fichas) en una sola petición
+  a `/prediccion/riesgo/lote`; después cada ficha mueve la aguja al instante.
+- **Estimación, no causa.** El búho habla siempre de lo que estima el modelo
+  («según el modelo…») y al final recuerda que es correlación, no
+  causalidad; el `aviso` de la API está siempre visible. La explicación marca
+  qué variables «no se pueden cambiar en el juego» (edad, semestre, carrera).
+- **Búho y medidor intercambiables:** las pantallas usan
+  `AparienciaLaboratorio`; hoy se dibujan con Flutter y en la Fase 7 se podrá
+  cambiar a Rive con otro provider, sin tocar las pantallas.
+- **Anti-caos:** la aguja (400 ms) es la animación protagonista del juego y
+  las estrellas (< 1 s, se saltan con un toque) la del resultado; el búho
+  cambia de cara con un fundido de 150 ms; los números y textos no se animan.
+  Con "reducir movimiento", nada se mueve.
+
+Prueba de punta a punta (con una API que ya tenga `/laboratorio`, p. ej. la
+local en el puerto 8001):
+
+```bash
+flutter test integration_test/laboratorio_real_test.dart -d linux \
+  --dart-define=API_URL=http://127.0.0.1:8001 \
+  --dart-define=ALIAS=Prueba_Frontend_1 --dart-define=PASSWORD='una contraseña larga' \
   --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
 ```
 

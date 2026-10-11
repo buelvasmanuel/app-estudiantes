@@ -9,7 +9,9 @@ import 'screens/acceso_screen.dart';
 import 'screens/campus_screen.dart';
 import 'screens/estudiantes_screen.dart';
 import 'screens/graficas_screen.dart';
+import 'screens/laboratorio_screen.dart';
 import 'screens/prediccion_screen.dart';
+import 'screens/rescate_screen.dart';
 import 'services/sesion.dart';
 import 'widgets/estado_vistas.dart';
 
@@ -17,6 +19,7 @@ import 'widgets/estado_vistas.dart';
 /// no sabe reescribir rutas, y con `#` recargar la página siempre funciona.
 abstract final class Rutas {
   static const campus = '/campus';
+  static const laboratorio = '/laboratorio';
   static const estudiantes = '/estudiantes';
   static const graficas = '/graficas';
   static const prediccion = '/prediccion';
@@ -27,6 +30,7 @@ abstract final class Rutas {
   static const cargando = '/cargando';
 
   static String estudiante(int id) => '$estudiantes/$id';
+  static String rescate(int estudianteId) => '$laboratorio/$estudianteId';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -123,6 +127,25 @@ GoRouter crearRouter({
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: Rutas.laboratorio,
+                builder: (_, _) => const LaboratorioScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (_, state) => RescateScreen(
+                      // Un id que no es número no existe como caso: la API
+                      // responde 404 caso_no_disponible.
+                      estudianteId:
+                          int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: Rutas.estudiantes,
                 // ?carrera=Derecho: llega filtrada desde el Campus.
                 builder: (_, state) => EstudiantesScreen(
@@ -168,7 +191,7 @@ GoRouter crearRouter({
   );
 }
 
-/// Estructura principal: una NavigationBar con 4 pestañas.
+/// Estructura principal: una NavigationBar con 5 pestañas.
 class InicioPage extends StatelessWidget {
   const InicioPage({super.key, required this.shell});
 
@@ -186,6 +209,11 @@ class InicioPage extends StatelessWidget {
             icon: Icon(Icons.location_city_outlined),
             selectedIcon: Icon(Icons.location_city),
             label: 'Campus',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.science_outlined),
+            selectedIcon: Icon(Icons.science),
+            label: 'Laboratorio',
           ),
           NavigationDestination(
             icon: Icon(Icons.people_outline),

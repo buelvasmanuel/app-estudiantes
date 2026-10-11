@@ -216,3 +216,9 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   y geometría puros (testeados), `ControladorCampus` compartido y un
   `CampusJuego` que solo dibuja. `GET /estudiantes/` es el único dato.
   `/estudiantes?carrera=X` filtra la lista desde el expediente.
+- **Fase 4, Laboratorio** (`lib/laboratorio/`, contrato
+  `api-tienda/docs/CONTRATO_LABORATORIO.md` v1): segunda pestaña. Estrellas y
+  óptimo siempre del servidor; medidor con `/prediccion/riesgo/lote` (una
+  petición por caso). Búho y medidor tras `AparienciaLaboratorio` (Rive en
+  la Fase 7). `Semantics` con `container: true` para que el lector de
+  pantalla no funda los textos de la pantalla en un solo nodo.

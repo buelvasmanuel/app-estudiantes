@@ -25,6 +25,11 @@ cuatro pestañas:
 | **APK Android** | [Estudiantes.apk](https://github.com/buelvasmanuel/app-estudiantes/releases/latest/download/Estudiantes.apk) ([todas las versiones](https://github.com/buelvasmanuel/app-estudiantes/releases)) · Android 7.0+ |
 | **API** | <https://api-tienda-wjac.onrender.com/docs> |
 
+Hace falta una cuenta: al abrir la app, **«¿No tienes cuenta? Regístrate»**
+(alias y contraseña de al menos 10 caracteres). En el APK la sesión se
+recuerda; en la web, al recargar la página hay que volver a entrar (el token
+no se guarda en el navegador, ver [Cuentas y sesión](#cuentas-y-sesión)).
+
 La API está en el plan gratuito de Render, que se apaga tras ~15 min sin uso:
 la primera carga puede tardar hasta un minuto (la app lo avisa con
 *"Despertando el servidor…"*).
@@ -253,6 +258,15 @@ comprueba que las 3 pestañas cargan datos reales (y las 6 gráficas):
 
 ```bash
 flutter test integration_test/app_real_test.dart -d linux
+```
+
+Registro, refresh, logout y login contra la API real (crea la cuenta que se
+indique):
+
+```bash
+flutter test integration_test/auth_real_test.dart -d linux \
+  --dart-define=API_URL=https://api-tienda-wjac.onrender.com \
+  --dart-define=ALIAS=Prueba_Frontend_1 --dart-define=PASSWORD='una contraseña larga'
 ```
 
 El almacén seguro real de la plataforma (en Linux, libsecret) se prueba con:

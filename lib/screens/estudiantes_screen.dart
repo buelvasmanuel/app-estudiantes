@@ -91,7 +91,10 @@ class _EstudiantesScreenState extends State<EstudiantesScreen> {
           error: error,
           onReintentar: _reintentar,
         ),
-        (null, null) => const CargandoVista(mensaje: 'Cargando estudiantes…'),
+        (null, null) => CargandoVista(
+          mensaje: 'Cargando estudiantes…',
+          despertando: widget.api.despertando,
+        ),
         (final List<Estudiante> lista, _) => _contenido(lista),
       },
     );

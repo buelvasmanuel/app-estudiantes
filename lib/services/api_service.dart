@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config.dart';
@@ -35,6 +36,27 @@ class ApiService {
 
   final http.Client _client;
   final String baseUrl;
+
+  /// `true` mientras el servidor está tardando en arrancar (Render free).
+  /// Las pantallas de carga lo escuchan para mostrar un aviso.
+  final ValueNotifier<bool> despertando = ValueNotifier(false);
+
+  DateTime? _ultimaRespuesta;
+  int _peticionesEnFrio = 0;
+
+  /// El servidor puede estar dormido si nunca respondió o si lleva mucho
+  /// tiempo sin hacerlo.
+  bool get _enFrio {
+    final ultima = _ultimaRespuesta;
+    return ultima == null ||
+        DateTime.now().difference(ultima) > Config.inactividadParaDormir;
+  }
+
+  /// Las direcciones locales nunca "se duermen": solo cambia el consejo que
+  /// se da cuando fallan.
+  bool get _esLocal =>
+      RegExp(r'//(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)')
+          .hasMatch(baseUrl);
 
   // --- Endpoints -------------------------------------------------------------
 
@@ -82,27 +104,47 @@ class ApiService {
     }
   }
 
-  void cerrar() => _client.close();
+  void cerrar() {
+    despertando.dispose();
+    _client.close();
+  }
 
   // --- Detalles internos ----------------------------------------------------
 
   Future<Object?> _enviar(Future<http.Response> Function() peticion) async {
+    final enFrio = _enFrio;
+    final limite = enFrio ? Config.timeoutArranque : Config.timeout;
+    Timer? aviso;
+    if (enFrio) {
+      _peticionesEnFrio++;
+      aviso = Timer(Config.avisoDespertar, () => despertando.value = true);
+    }
+
     final http.Response respuesta;
     try {
-      respuesta = await peticion().timeout(Config.timeout);
+      respuesta = await peticion().timeout(limite);
     } on TimeoutException {
       throw ApiException(
-        'La API no respondió en ${Config.timeout.inSeconds} s ($baseUrl). '
-        'Comprueba que uvicorn está corriendo y que la dirección es correcta.',
+        'La API no respondió en ${limite.inSeconds} s ($baseUrl). '
+        '${_esLocal ? 'Comprueba que uvicorn está corriendo y que la dirección es correcta.' : 'El servidor puede estar caído; inténtalo de nuevo en un momento.'}',
       );
     } on http.ClientException {
       // En Linux/Android, http convierte el SocketException ("conexión
       // rechazada") en ClientException; en web, también llega así.
       throw ApiException(
         'No se pudo conectar con la API en $baseUrl.\n'
-        '¿Está corriendo? uvicorn app.main:app --reload --host 0.0.0.0',
+        '${_esLocal ? '¿Está corriendo? uvicorn app.main:app --reload --host 0.0.0.0' : 'Comprueba tu conexión a internet.'}',
       );
+    } finally {
+      if (enFrio) {
+        aviso?.cancel();
+        _peticionesEnFrio--;
+        if (_peticionesEnFrio == 0) despertando.value = false;
+      }
     }
+    // Cualquier respuesta HTTP (aunque sea un error 4xx/5xx) indica que el
+    // servidor ya está despierto.
+    _ultimaRespuesta = DateTime.now();
 
     final ok = respuesta.statusCode >= 200 && respuesta.statusCode < 300;
     final Object? datos;

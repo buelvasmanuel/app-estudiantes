@@ -145,8 +145,9 @@ class _GraficasScreenState extends State<GraficasScreen> {
                                 error: e,
                                 onReintentar: () => _cargar(_tipo),
                               ),
-                              (null, null) => const CargandoVista(
+                              (null, null) => CargandoVista(
                                 mensaje: 'Cargando estadística…',
+                                despertando: widget.api.despertando,
                               ),
                               (final List<Estadistica> d, _) when d.isEmpty =>
                                 const VaciaVista(

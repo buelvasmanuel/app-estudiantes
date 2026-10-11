@@ -1,0 +1,65 @@
+# Compila la versión web y la publica en GitHub Pages en cada push a main.
+#
+# La URL de la API se lee de la variable del repositorio API_URL
+# (Settings → Secrets and variables → Actions → Variables), o:
+#   gh variable set API_URL --body "https://<tu-api>.onrender.com"
+name: Web (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Comprobar API_URL
+        run: |
+          if [ -z "${{ vars.API_URL }}" ]; then
+            echo "::error::Falta la variable API_URL del repositorio (gh variable set API_URL --body https://...)"
+            exit 1
+          fi
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.2
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+      # --base-href: la web vive en https://<usuario>.github.io/<repo>/
+      - name: Compilar web
+        run: >
+          flutter build web --release
+          --base-href "/${{ github.event.repository.name }}/"
+          --dart-define=API_URL=${{ vars.API_URL }}
+
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

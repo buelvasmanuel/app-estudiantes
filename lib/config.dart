@@ -17,6 +17,18 @@ abstract final class Config {
   /// Tiempo máximo de espera de cada petición antes de dar error.
   static const Duration timeout = Duration(seconds: 8);
 
+  /// Espera máxima cuando el servidor puede estar dormido. El plan gratuito
+  /// de Render apaga la API tras ~15 min sin uso y tarda hasta un minuto en
+  /// volver a arrancar.
+  static const Duration timeoutArranque = Duration(seconds: 60);
+
+  /// Si una petición "en frío" tarda más que esto, se avisa al usuario de
+  /// que el servidor se está despertando.
+  static const Duration avisoDespertar = Duration(seconds: 3);
+
+  /// Sin respuestas durante este tiempo, se asume que el servidor se durmió.
+  static const Duration inactividadParaDormir = Duration(minutes: 14);
+
   /// URL base de la API, sin la barra final.
   static String get apiUrl {
     final url = _apiUrlDefine.isNotEmpty ? _apiUrlDefine : _urlPorDefecto;

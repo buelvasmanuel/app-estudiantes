@@ -1,26 +1,73 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
 
 /// Indicador de carga centrado, con un texto opcional.
+///
+/// Si se le pasa [despertando] y se pone a `true`, cambia el mensaje para
+/// explicar que el servidor (Render free) está arrancando.
 class CargandoVista extends StatelessWidget {
-  const CargandoVista({super.key, this.mensaje = 'Cargando…'});
+  const CargandoVista({
+    super.key,
+    this.mensaje = 'Cargando…',
+    this.despertando,
+  });
 
   final String mensaje;
+  final ValueListenable<bool>? despertando;
+
+  static const mensajeDespertando =
+      'Despertando el servidor, puede tardar hasta un minuto…';
 
   @override
   Widget build(BuildContext context) {
+    final tema = Theme.of(context);
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 16),
-          Text(mensaje, style: Theme.of(context).textTheme.bodyMedium),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ValueListenableBuilder<bool>(
+          valueListenable: despertando ?? const _Siempre(false),
+          builder: (context, dormido, _) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                dormido ? mensajeDespertando : mensaje,
+                style: tema.textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              if (dormido) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'El servidor gratuito se apaga tras un rato sin uso.',
+                  style: tema.textTheme.bodySmall?.copyWith(
+                    color: tema.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
+}
+
+/// ValueListenable constante (para cuando no hay nada que escuchar).
+class _Siempre implements ValueListenable<bool> {
+  const _Siempre(this.value);
+
+  @override
+  final bool value;
+
+  @override
+  void addListener(VoidCallback listener) {}
+
+  @override
+  void removeListener(VoidCallback listener) {}
 }
 
 /// Pantalla de error con el mensaje y un botón "Reintentar".

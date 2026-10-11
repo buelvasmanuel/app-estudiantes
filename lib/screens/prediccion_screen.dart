@@ -100,7 +100,10 @@ class _PrediccionScreenState extends State<PrediccionScreen> {
           error: e,
           onReintentar: _cargarMetricas,
         ),
-        (null, null) => const CargandoVista(mensaje: 'Cargando el modelo…'),
+        (null, null) => CargandoVista(
+          mensaje: 'Cargando el modelo…',
+          despertando: widget.api.despertando,
+        ),
         (final MetricasModelo m, _) => _contenido(m),
       },
     );
@@ -199,12 +202,17 @@ class _PrediccionScreenState extends State<PrediccionScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2.5),
                       )
                     : const Icon(Icons.psychology_alt_outlined),
-                label: Text(
-                  entrada == null
-                      ? 'Elige una carrera para predecir'
-                      : _prediciendo
-                      ? 'Prediciendo…'
-                      : 'Predecir',
+                label: ValueListenableBuilder<bool>(
+                  valueListenable: widget.api.despertando,
+                  builder: (context, dormido, _) => Text(
+                    entrada == null
+                        ? 'Elige una carrera para predecir'
+                        : !_prediciendo
+                        ? 'Predecir'
+                        : dormido
+                        ? 'Despertando el servidor…'
+                        : 'Prediciendo…',
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

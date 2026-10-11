@@ -16,6 +16,30 @@ tres pestañas:
   <img src="docs/capturas/6_sobre_el_modelo.png" width="200" alt="Métricas del modelo">
 </p>
 
+## Pruébala ya (versión en la nube)
+
+| | Enlace |
+|---|---|
+| **App web** | <https://buelvasmanuel.github.io/app-estudiantes/> |
+| **APK Android** | [Estudiantes.apk](https://github.com/buelvasmanuel/app-estudiantes/releases/latest/download/Estudiantes.apk) ([todas las versiones](https://github.com/buelvasmanuel/app-estudiantes/releases)) |
+| **API** | <https://api-tienda-wjac.onrender.com/docs> |
+
+La API está en el plan gratuito de Render, que se apaga tras ~15 min sin uso:
+la primera carga puede tardar hasta un minuto (la app lo avisa con
+*"Despertando el servidor…"*).
+
+### Instalar el APK
+
+1. Abre el enlace del APK **desde el celular** y descarga `Estudiantes.apk`.
+2. Ábrelo. Si Android lo pide, permite **"Instalar apps desconocidas"** para el
+   navegador (o el gestor de archivos).
+3. Si Play Protect avisa de una app no reconocida: **Más detalles → Instalar de
+   todas formas**. (Va firmada con la clave de depuración: sirve para instalarla
+   a mano, no para publicarla en Google Play.)
+
+Si ya tenías instalada una versión de `flutter run`, se actualiza encima (misma
+firma de depuración).
+
 > **Para ejecutar el proyecto completo (API + app) desde cero en Windows o
 > Linux:** ver [INSTRUCCIONES_PROFESOR.md](INSTRUCCIONES_PROFESOR.md).
 
@@ -113,6 +137,7 @@ La URL se decide en `lib/config.dart`:
 
 | Dónde corre | URL por defecto |
 |---|---|
+| APK de la Release y web de GitHub Pages | `https://api-tienda-wjac.onrender.com` (compilada con `--dart-define`) |
 | Android (emulador) | `http://10.0.2.2:8000` |
 | Windows, Linux, Chrome | `http://127.0.0.1:8000` |
 | Cualquiera, con `--dart-define=API_URL=...` | la que indiques |
@@ -162,6 +187,28 @@ lib/
     ├── grafica_barras.dart    # BarChart de fl_chart
     └── promedio_badge.dart    # Pastilla y avatar con el color del riesgo
 ```
+
+## Publicar una versión nueva
+
+**Web (GitHub Pages):** se publica sola en cada push a `main` con el workflow
+`.github/workflows/web.yml`, que compila con la variable del repositorio
+`API_URL`:
+
+```bash
+gh variable set API_URL --body "https://api-tienda-wjac.onrender.com"   # una sola vez
+git push                                                               # compila y publica
+```
+
+**APK:** se compila en local con la URL de la API y se sube como Release:
+
+```bash
+flutter build apk --release --dart-define=API_URL=https://api-tienda-wjac.onrender.com
+cp build/app/outputs/flutter-apk/app-release.apk Estudiantes.apk
+gh release create v1.1.0 Estudiantes.apk --title "Estudiantes 1.1.0" --notes "..."
+```
+
+(Sube también `version:` en `pubspec.yaml`, p. ej. `1.1.0+2`, para que Android
+la reconozca como actualización.)
 
 ## Tests
 

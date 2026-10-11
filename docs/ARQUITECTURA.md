@@ -199,3 +199,6 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   detalle en `/estudiantes/:id` sobre el Navigator raíz). Las ramas se
   construyen al visitarlas: al arrancar solo se pide `GET /estudiantes/`
   (resuelve la deuda 3 del frontend). Reintentos automáticos desactivados.
+- **ApiService**: `PeticionApi` (método, ruta, cuerpo, cabeceras) e
+  `InterceptorApi` (`antesDeEnviar`, `reintentar` como máximo una vez);
+  métodos `get/post/put/patch/delete` y `enviar` (resuelve la deuda 1).

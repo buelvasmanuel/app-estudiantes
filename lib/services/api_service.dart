@@ -25,17 +25,72 @@ class ApiException implements Exception {
   String toString() => mensaje;
 }
 
+/// Una petición a la API antes de enviarse. Los interceptores pueden cambiar
+/// sus [cabeceras] (p. ej. añadir `Authorization`).
+class PeticionApi {
+  PeticionApi(
+    this.metodo,
+    this.ruta, {
+    this.cuerpo,
+    Map<String, String>? cabeceras,
+    this.conInterceptores = true,
+  }) : cabeceras = {...?cabeceras};
+
+  /// `GET`, `POST`, `PUT`, `PATCH` o `DELETE`.
+  final String metodo;
+
+  /// Ruta desde la URL base, con la barra inicial: `/estudiantes/`.
+  final String ruta;
+
+  /// Se envía como JSON. `null` = sin cuerpo.
+  final Object? cuerpo;
+
+  final Map<String, String> cabeceras;
+
+  /// `false` para saltarse los interceptores. Lo necesita, por ejemplo, la
+  /// propia petición que renueva el token: si pasara por el interceptor de
+  /// sesión, este intentaría renovarlo otra vez.
+  final bool conInterceptores;
+
+  @override
+  String toString() => '$metodo $ruta';
+}
+
+/// Lógica común a todas las peticiones (por ejemplo, la sesión).
+///
+/// Se registra en [ApiService.interceptores] y se ejecuta en orden.
+abstract class InterceptorApi {
+  const InterceptorApi();
+
+  /// Se llama antes de enviar [peticion], también antes de repetirla.
+  Future<void> antesDeEnviar(PeticionApi peticion) async {}
+
+  /// Se llama cuando [peticion] termina con [error]. Devolver `true` repite
+  /// la petición (una sola vez por petición, aunque varios interceptores lo
+  /// pidan): sirve para renovar un token caducado y volver a intentarlo.
+  Future<bool> reintentar(PeticionApi peticion, ApiException error) async =>
+      false;
+}
+
 /// Único punto de la app que habla con la API.
 ///
 /// Recibe el `http.Client` por el constructor para que los tests puedan
 /// pasarle un `MockClient` y simular respuestas sin red.
 class ApiService {
-  ApiService({http.Client? client, String? baseUrl})
-    : _client = client ?? http.Client(),
-      baseUrl = baseUrl ?? Config.apiUrl;
+  ApiService({
+    http.Client? client,
+    String? baseUrl,
+    List<InterceptorApi>? interceptores,
+  }) : _client = client ?? http.Client(),
+       baseUrl = baseUrl ?? Config.apiUrl,
+       interceptores = [...?interceptores];
 
   final http.Client _client;
   final String baseUrl;
+
+  /// Se pueden añadir después de crear el servicio (el de la sesión necesita
+  /// el propio [ApiService] para renovar el token).
+  final List<InterceptorApi> interceptores;
 
   /// `true` mientras el servidor está tardando en arrancar (Render free).
   /// Las pantallas de carga lo escuchan para mostrar un aviso.
@@ -80,16 +135,45 @@ class ApiService {
 
   // --- Peticiones genéricas -------------------------------------------------
 
-  Future<Object?> get(String ruta) =>
-      _enviar(() => _client.get(Uri.parse('$baseUrl$ruta')));
+  Future<Object?> get(String ruta) => enviar(PeticionApi('GET', ruta));
 
-  Future<Object?> post(String ruta, Map<String, Object?> cuerpo) => _enviar(
-    () => _client.post(
-      Uri.parse('$baseUrl$ruta'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode(cuerpo),
-    ),
-  );
+  Future<Object?> post(String ruta, Object? cuerpo) =>
+      enviar(PeticionApi('POST', ruta, cuerpo: cuerpo));
+
+  Future<Object?> put(String ruta, Object? cuerpo) =>
+      enviar(PeticionApi('PUT', ruta, cuerpo: cuerpo));
+
+  Future<Object?> patch(String ruta, Object? cuerpo) =>
+      enviar(PeticionApi('PATCH', ruta, cuerpo: cuerpo));
+
+  Future<Object?> delete(String ruta) => enviar(PeticionApi('DELETE', ruta));
+
+  /// Envía [peticion] pasando por los [interceptores] (salvo que
+  /// `conInterceptores` sea `false`) y devuelve el JSON decodificado.
+  Future<Object?> enviar(PeticionApi peticion) async {
+    final activos = peticion.conInterceptores
+        ? List.of(interceptores) // copia: la lista puede cambiar mientras
+        : const <InterceptorApi>[];
+    var repetida = false;
+    while (true) {
+      for (final i in activos) {
+        await i.antesDeEnviar(peticion);
+      }
+      try {
+        return await _enviar(peticion);
+      } on ApiException catch (error) {
+        if (repetida) rethrow;
+        var repetir = false;
+        for (final i in activos) {
+          // Se consulta a todos (no se corta en el primero que dice "sí"):
+          // cada uno puede necesitar reaccionar al error.
+          if (await i.reintentar(peticion, error)) repetir = true;
+        }
+        if (!repetir) rethrow;
+        repetida = true;
+      }
+    }
+  }
 
   /// Convierte el JSON en modelos. Si el formato no es el esperado, lo
   /// transforma en un [ApiException] con un mensaje claro.
@@ -111,7 +195,7 @@ class ApiService {
 
   // --- Detalles internos ----------------------------------------------------
 
-  Future<Object?> _enviar(Future<http.Response> Function() peticion) async {
+  Future<Object?> _enviar(PeticionApi peticion) async {
     final enFrio = _enFrio;
     final limite = enFrio ? Config.timeoutArranque : Config.timeout;
     Timer? aviso;
@@ -122,7 +206,7 @@ class ApiService {
 
     final http.Response respuesta;
     try {
-      respuesta = await peticion().timeout(limite);
+      respuesta = await _hacer(peticion).timeout(limite);
     } on TimeoutException {
       throw ApiException(
         'La API no respondió en ${limite.inSeconds} s ($baseUrl). '
@@ -169,6 +253,20 @@ class ApiService {
       _mensajeDeError(respuesta.statusCode, datos),
       statusCode: respuesta.statusCode,
     );
+  }
+
+  /// Una petición HTTP nueva en cada intento: un `http.Request` no se puede
+  /// enviar dos veces.
+  Future<http.Response> _hacer(PeticionApi peticion) async {
+    final request = http.Request(
+      peticion.metodo,
+      Uri.parse('$baseUrl${peticion.ruta}'),
+    )..headers.addAll(peticion.cabeceras);
+    if (peticion.cuerpo != null) {
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode(peticion.cuerpo);
+    }
+    return http.Response.fromStream(await _client.send(request));
   }
 
   /// FastAPI envía los errores como `{"detail": ...}`, y `detail` puede ser:

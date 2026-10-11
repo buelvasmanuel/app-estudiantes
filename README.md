@@ -266,6 +266,10 @@ flutter test integration_test/capturas_test.dart -d linux \
 - **Errores**: `ApiService` convierte los fallos en un `ApiException` con un
   mensaje para el usuario: sin conexión, *timeout* (8 s), y los `detail` de
   FastAPI (texto, objeto propio o lista de validación de Pydantic).
+- **Interceptores**: toda petición pasa por `ApiService.enviar(PeticionApi)`.
+  Un `InterceptorApi` puede añadir cabeceras antes de enviar (p. ej.
+  `Authorization`) y pedir que se repita la petición **una sola vez** tras un
+  error (p. ej. un 401 por token caducado, después de renovarlo).
 - **Riverpod** guarda los datos de la API (`providers.dart`): cada pantalla
   hace `ref.watch(...)` y pinta cargando / error / datos. Los datos se
   conservan hasta que el usuario pide actualizar; si la actualización falla, se

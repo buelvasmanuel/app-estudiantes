@@ -6,6 +6,7 @@ import 'models/estudiante.dart';
 import 'providers.dart';
 import 'screens/estudiante_detalle_screen.dart';
 import 'screens/acceso_screen.dart';
+import 'screens/campus_screen.dart';
 import 'screens/estudiantes_screen.dart';
 import 'screens/graficas_screen.dart';
 import 'screens/prediccion_screen.dart';
@@ -15,6 +16,7 @@ import 'widgets/estado_vistas.dart';
 /// Rutas de la app. En la web van detrás de `#` (`/#/graficas`): GitHub Pages
 /// no sabe reescribir rutas, y con `#` recargar la página siempre funciona.
 abstract final class Rutas {
+  static const campus = '/campus';
   static const estudiantes = '/estudiantes';
   static const graficas = '/graficas';
   static const prediccion = '/prediccion';
@@ -54,7 +56,7 @@ String? redirigir(GestorSesion sesion, GoRouterState state) {
       ruta == Rutas.cargando ? desde : pedida,
     ),
     EstadoSesion.conSesion when enAcceso || ruta == Rutas.cargando =>
-      desde ?? Rutas.estudiantes,
+      desde ?? Rutas.campus,
     EstadoSesion.conSesion => null,
   };
 }
@@ -77,7 +79,7 @@ String? _rutaInterna(String? ruta) =>
 /// de la pestaña visible.
 GoRouter crearRouter({
   required GestorSesion sesion,
-  String inicial = Rutas.estudiantes,
+  String inicial = Rutas.campus,
 }) {
   final raiz = GlobalKey<NavigatorState>(debugLabel: 'raiz');
   return GoRouter(
@@ -88,7 +90,7 @@ GoRouter crearRouter({
     refreshListenable: sesion,
     redirect: (_, state) => redirigir(sesion, state),
     routes: [
-      GoRoute(path: '/', redirect: (_, _) => Rutas.estudiantes),
+      GoRoute(path: '/', redirect: (_, _) => Rutas.campus),
       GoRoute(
         path: Rutas.cargando,
         builder: (_, _) => const CargandoSesionScreen(),
@@ -113,8 +115,19 @@ GoRouter crearRouter({
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: Rutas.campus,
+                builder: (_, _) => const CampusScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: Rutas.estudiantes,
-                builder: (_, _) => const EstudiantesScreen(),
+                // ?carrera=Derecho: llega filtrada desde el Campus.
+                builder: (_, state) => EstudiantesScreen(
+                  carrera: state.uri.queryParameters['carrera'],
+                ),
                 routes: [
                   // El detalle tapa la barra de pestañas: va en el Navigator raíz.
                   GoRoute(
@@ -155,7 +168,7 @@ GoRouter crearRouter({
   );
 }
 
-/// Estructura principal: una NavigationBar con 3 pestañas.
+/// Estructura principal: una NavigationBar con 4 pestañas.
 class InicioPage extends StatelessWidget {
   const InicioPage({super.key, required this.shell});
 
@@ -169,6 +182,11 @@ class InicioPage extends StatelessWidget {
         selectedIndex: shell.currentIndex,
         onDestinationSelected: shell.goBranch,
         destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.location_city_outlined),
+            selectedIcon: Icon(Icons.location_city),
+            label: 'Campus',
+          ),
           NavigationDestination(
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),

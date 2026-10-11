@@ -212,3 +212,7 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   (ventana de 120 s). Los endpoints públicos ignoran `Authorization`.
   **Pendiente (opcional):** pantalla de docente para `POST /usuarios/lote`
   (alta de hasta 40 cuentas con contraseñas generadas, solo visibles una vez).
+- **Fase 3, Campus** (`lib/campus/`, `flame` 1.38.2): primera pestaña. Modelo
+  y geometría puros (testeados), `ControladorCampus` compartido y un
+  `CampusJuego` que solo dibuja. `GET /estudiantes/` es el único dato.
+  `/estudiantes?carrera=X` filtra la lista desde el expediente.

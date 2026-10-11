@@ -1,6 +1,7 @@
 // Genera capturas PNG de la app con datos REALES de la API (para el README).
 //
 //   flutter test integration_test/capturas_test.dart -d linux \
+//     --dart-define=API_URL=https://api-tienda-wjac.onrender.com \
 //     --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
 //
 // La app se renderiza a tamaño de celular (412×915) dentro de un
@@ -8,17 +9,16 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:app_estudiantes/main.dart';
 import 'package:app_estudiantes/models/estadistica.dart';
+import 'package:app_estudiantes/router.dart';
 import 'package:app_estudiantes/screens/prediccion_screen.dart';
-import 'package:app_estudiantes/providers.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'app_real.dart';
 import 'app_real_test.dart' show esperarA;
 
 const _dir = String.fromEnvironment('CAPTURAS_DIR', defaultValue: 'capturas');
@@ -58,10 +58,7 @@ void main() {
     await tester.pumpWidget(
       RepaintBoundary(
         key: clave,
-        child: const ProviderScope(
-          retry: sinReintentos,
-          child: EstudiantesApp(),
-        ),
+        child: appReal(inicial: Rutas.estudiantes),
       ),
     );
 

@@ -1,10 +1,11 @@
 # Estudiantes
 
 App Flutter (Material 3) que consume la API FastAPI de `api-tienda` y tiene
-tres pestañas:
+cuatro pestañas:
 
 | Pestaña | Qué hace | Endpoints |
 |---|---|---|
+| **Campus** | Mapa 2.5D (Flame): cada edificio es una carrera, cada piso un semestre y cada ventana un estudiante, roja si está en riesgo. Tocar un edificio abre su expediente; tocar una ventana, la ficha del estudiante | `GET /estudiantes/` |
 | **Estudiantes** | Listado con buscador, filtro "en riesgo", indicador de color (promedio < 3.0), pull-to-refresh y pantalla de detalle | `GET /estudiantes/` |
 | **Gráficas** | Gráfica de barras (fl_chart) de 6 estadísticas, con el valor encima de cada barra y un resumen | `GET /estudiantes/estadisticas/{tipo}` |
 | **Predicción** | Formulario (carrera + 4 sliders) que predice el riesgo académico, con el resultado en rojo/verde y las métricas del modelo | `GET /prediccion/metricas`, `POST /prediccion/riesgo` |
@@ -182,9 +183,14 @@ En `android/app/src/main/AndroidManifest.xml`:
 ```
 lib/
 ├── main.dart                  # ProviderScope + MaterialApp.router
-├── router.dart                # Rutas (go_router) y barra de 3 pestañas
+├── router.dart                # Rutas (go_router) y barra de 4 pestañas
 ├── providers.dart             # Providers de Riverpod (ApiService, sesión y datos)
 ├── config.dart                # URL de la API (--dart-define) y timeout
+├── campus/                    # Pestaña Campus
+│   ├── modelo.dart            # Campus y Edificio (pisos = semestres)
+│   ├── disposicion.dart       # Geometría, cámara (Vista) y qué hay bajo un toque
+│   ├── controlador.dart       # Estado compartido entre la interfaz y Flame
+│   └── juego.dart             # Dibujo con Flame (solo dibuja)
 ├── theme.dart                 # Tema M3 claro/oscuro + colores de riesgo/ok
 ├── models/
 │   ├── json_utils.dart        # Lectura segura de JSON (num, String, bool...)
@@ -198,6 +204,7 @@ lib/
 │   └── almacen_refresh.dart   # Dónde se guarda el refresh token
 ├── screens/
 │   ├── acceso_screen.dart     # Login, registro y "recuperando sesión"
+│   ├── campus_screen.dart     # Leyenda, mapa, lista de edificios y paneles
 │   ├── estudiantes_screen.dart
 │   ├── estudiante_detalle_screen.dart
 │   ├── graficas_screen.dart
@@ -286,6 +293,45 @@ mostrar nada. Implementa el contrato `docs/CONTRATO_AUTH.md` del repo
 | **Sin respuesta al renovar** | Se reintenta con el **mismo** refresh: una vez tras un timeout y hasta 2 tras un error de red, nunca pasados 110 s (la API lo acepta repetido durante 120 s). Si se agotan, error de conexión y se conservan los tokens. |
 | **Sesión cerrada** | Si la API rechaza el refresh (sesión revocada, caducada o cuenta desactivada) se borran los tokens y se vuelve al login con un aviso. Sin red, los tokens se conservan. |
 | **Android** | `allowBackup="false"`: el refresh token no viaja en la copia de seguridad de Google. |
+
+## Campus
+
+<p>
+  <img src="docs/capturas/7_campus.png" width="200" alt="Campus">
+  <img src="docs/capturas/8_campus_expediente.png" width="200" alt="Expediente de una carrera">
+  <img src="docs/capturas/9_campus_estudiante.png" width="200" alt="Ficha de un estudiante">
+</p>
+
+- **Lectura:** edificio = carrera (ordenados de más a menos estudiantes), piso
+  = semestre (1.º abajo), ventana = estudiante en su orden real. Rojo con
+  franja diagonal = en riesgo (promedio < 3.0; la franja sirve sin distinguir
+  colores), verde = sin riesgo, apagada = hueco. Todos los edificios tienen 10
+  pisos para que se comparen de un vistazo; el ancho es el piso más lleno.
+- **Datos:** solo `GET /estudiantes/` (el mismo provider que la lista); las
+  cifras se calculan en el cliente.
+- **Flame solo dibuja.** Los gestos (arrastrar, pellizcar, rueda, toque) los
+  recoge Flutter y cambian `ControladorCampus`; el juego copia la cámara en
+  cada fotograma. Así la geometría y "qué hay bajo el dedo" son funciones
+  puras con tests.
+- **Reglas anti-caos:** una sola animación protagonista (las ventanas se
+  encienden piso a piso en 1,2 s; un toque la salta); el filtro "Solo en
+  riesgo" es un fundido de 200 ms; los paneles, 250 ms; los textos no se
+  mueven. Con **"reducir movimiento"** del sistema todo aparece al instante.
+- **Sin saltos:** la rejilla solo cambia si cambia el ancho (girar el
+  celular); al abrir el panel, el edificio elegido sigue encuadrado.
+- **Accesibilidad:** el lienzo no lo leen los lectores de pantalla; la lista
+  de edificios bajo el mapa sí (con sus cifras) y sirve para navegar con
+  teclado. Con poco zoom, tocar elige el edificio; las ventanas solo se pueden
+  tocar cuando miden ≥ 12 px.
+- **En otra pestaña el juego se pausa** (no gasta batería dibujando).
+
+Captura con datos reales (necesita la API):
+
+```bash
+flutter test integration_test/campus_test.dart -d linux \
+  --dart-define=API_URL=https://api-tienda-wjac.onrender.com \
+  --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
+```
 
 ## Detalles técnicos que vale la pena conocer
 

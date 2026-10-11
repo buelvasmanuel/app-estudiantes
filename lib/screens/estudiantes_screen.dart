@@ -12,7 +12,11 @@ import '../widgets/promedio_badge.dart';
 
 /// Pestaña 1: listado de estudiantes con buscador, filtro y pull-to-refresh.
 class EstudiantesScreen extends ConsumerStatefulWidget {
-  const EstudiantesScreen({super.key});
+  const EstudiantesScreen({super.key, this.carrera});
+
+  /// Si no es `null`, solo se muestran los de esa carrera (llega desde el
+  /// expediente de un edificio del Campus).
+  final String? carrera;
 
   @override
   ConsumerState<EstudiantesScreen> createState() => _EstudiantesScreenState();
@@ -81,7 +85,14 @@ class _EstudiantesScreenState extends ConsumerState<EstudiantesScreen> {
     );
   }
 
-  Widget _contenido(List<Estudiante> todos) {
+  Widget _contenido(List<Estudiante> lista) {
+    final carrera = widget.carrera;
+    final todos = carrera == null
+        ? lista
+        : [
+            for (final e in lista)
+              if (e.carrera == carrera) e,
+          ];
     final filtrados = _filtrar(todos);
     final enRiesgo = todos.where((e) => e.enRiesgo).length;
 
@@ -97,6 +108,19 @@ class _EstudiantesScreenState extends ConsumerState<EstudiantesScreen> {
               onChanged: (texto) => setState(() => _busqueda = texto),
             ),
           ),
+          if (carrera != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: InputChip(
+                  avatar: const Icon(Icons.school_outlined, size: 18),
+                  label: Text('Carrera: $carrera'),
+                  deleteButtonTooltipMessage: 'Quitar el filtro de carrera',
+                  onDeleted: () => context.go(Rutas.estudiantes),
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(

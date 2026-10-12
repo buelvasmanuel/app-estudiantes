@@ -72,6 +72,9 @@ void main() {
     await esperarA(tester, find.byKey(const Key('tarjeta-duelo')));
     await capturar(tester, '16_duelo_tarjeta');
     await tester.tap(find.byKey(const Key('tarjeta-duelo')));
+    // Primero se elige rival.
+    await esperarA(tester, find.byKey(const Key('elegir-maquina')));
+    await tester.tap(find.byKey(const Key('elegir-maquina')));
     await esperarA(tester, find.byKey(const Key('fase-duelo')));
     // ignore: avoid_print
     print('Al abrir: ${texto('fase-duelo')} · ${marcador()}');

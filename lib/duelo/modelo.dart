@@ -262,6 +262,7 @@ class Duelo {
     required this.atributos,
     this.expiraTurnoEn,
     this.rivalEnLinea,
+    this.actualizadoEn,
     this.recompensa,
   });
 
@@ -297,10 +298,26 @@ class Duelo {
   /// v2: si el rival tiene abierto el duelo. `null` contra la máquina.
   final bool? rivalEnLinea;
 
+  /// Para no pisar un estado nuevo con una respuesta vieja (REST y
+  /// WebSocket pueden llegar en cualquier orden).
+  final DateTime? actualizadoEn;
+
   /// Solo en la respuesta de la jugada que termina el duelo.
   final Recompensa? recompensa;
 
   bool get contraMaquina => modo == ModoDuelo.maquina;
+
+  /// Sigue vivo: buscando rival o jugando.
+  bool get activo =>
+      estado == EstadoDuelo.esperando || estado == EstadoDuelo.enJuego;
+
+  /// Este estado es anterior a [otro]: no debe sustituirlo (REST y
+  /// WebSocket pueden llegar en cualquier orden).
+  bool esMasViejoQue(Duelo otro) {
+    final a = actualizadoEn, b = otro.actualizadoEn;
+    if (a != null && b != null) return a.isBefore(b);
+    return rondas.length < otro.rondas.length;
+  }
 
   /// Lo que se puede jugar ahora mismo: hay ronda y el duelo sigue.
   bool get enJuego => estado == EstadoDuelo.enJuego && ronda != null;
@@ -345,6 +362,9 @@ class Duelo {
           ? DateTime.tryParse(expira)?.toLocal()
           : null,
       rivalEnLinea: enLinea is bool ? enLinea : null,
+      actualizadoEn: m['actualizado_en'] is String
+          ? DateTime.tryParse(m['actualizado_en']! as String)
+          : null,
       recompensa: Recompensa.desde(m),
     );
   }
@@ -376,4 +396,31 @@ class DueloResumen {
       comoLista(comoMapa(json, 'lista de duelos')['duelos'])
           .map(DueloResumen.fromJson)
           .toList();
+}
+
+/// Duelos con XP que lleva hoy el jugador en un modo (`{jugados, maximo}`).
+class XpHoy {
+  const XpHoy({required this.jugados, required this.maximo});
+
+  final int jugados;
+  final int maximo;
+
+  static XpHoy? desde(Object? json) {
+    if (json is! Map<String, Object?>) return null;
+    try {
+      return XpHoy(
+        jugados: leerInt(json, 'jugados'),
+        maximo: leerInt(json, 'maximo'),
+      );
+    } on FormatException {
+      return null;
+    }
+  }
+
+  /// `xp_hoy` de `GET /duelos` (petición al backend; puede no venir).
+  static Map<ModoDuelo, XpHoy> deLista(Object? json) {
+    final m = json is Map<String, Object?> ? json['xp_hoy'] : null;
+    if (m is! Map<String, Object?>) return const {};
+    return {for (final modo in ModoDuelo.values) modo: ?desde(m[modo.name])};
+  }
 }

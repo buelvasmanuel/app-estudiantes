@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../sonidos.dart';
 
 import 'modelo.dart';
+import '../formato.dart';
 
 /// Celebra una subida de nivel o insignias nuevas, si las hay.
 ///
@@ -129,7 +130,7 @@ class _CelebracionVistaState extends State<CelebracionVista>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '+${r.xpGanada} XP · ${r.progreso.xp} XP en total',
+                    '+${r.xpGanada} XP · ${formatoEntero(r.progreso.xp)} XP en total',
                     style: tema.textTheme.titleMedium?.copyWith(
                       color: tema.colorScheme.primary,
                     ),

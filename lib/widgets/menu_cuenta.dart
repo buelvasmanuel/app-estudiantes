@@ -9,6 +9,7 @@ import '../providers.dart';
 import '../router.dart';
 import '../services/api_service.dart';
 import '../tema/temas.dart';
+import '../formato.dart';
 
 enum _Opcion { tema, perfil, docente, cerrar, cerrarTodas }
 
@@ -161,7 +162,9 @@ class ChipNivel extends ConsumerWidget {
       child: ActionChip(
         key: const Key('chip-nivel'),
         avatar: const Icon(Icons.bolt, size: 18),
-        label: Text('Nv ${progreso.nivel.numero} · ${progreso.xp} XP'),
+        label: Text(
+          'Nv ${progreso.nivel.numero} · ${formatoEntero(progreso.xp)} XP',
+        ),
         onPressed: () => context.go(Rutas.perfil),
         visualDensity: VisualDensity.compact,
       ),

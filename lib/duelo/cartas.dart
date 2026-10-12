@@ -150,21 +150,25 @@ class _CartaRivalState extends State<CartaRival>
         container: true,
         label: 'Carta de ${widget.alias}, boca abajo',
         excludeSemantics: true,
+        // Baja (56): en un celular de 360×640, en tu turno, se ven los 4
+        // atributos de tu carta sin desplazar.
         child: SizedBox(
-          height: 116,
-          child: Column(
+          height: 56,
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 papel ? Icons.folder_outlined : Icons.help_outline_rounded,
-                size: 40,
+                size: 28,
                 color: tema.colorScheme.primary,
               ),
-              const SizedBox(height: 8),
-              Text(
-                '${widget.alias} · carta boca abajo',
-                textAlign: TextAlign.center,
-                style: tema.textTheme.bodyMedium,
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  '${widget.alias} · carta boca abajo',
+                  overflow: TextOverflow.ellipsis,
+                  style: tema.textTheme.bodyMedium,
+                ),
               ),
             ],
           ),

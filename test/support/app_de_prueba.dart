@@ -1,3 +1,5 @@
+import 'package:app_estudiantes/duelo/canal.dart';
+import 'package:app_estudiantes/duelo/duelo_api.dart';
 import 'package:app_estudiantes/main.dart';
 import 'package:app_estudiantes/models/sesion.dart';
 import 'package:app_estudiantes/preferencias.dart';
@@ -26,6 +28,7 @@ Tokens tokensDePrueba({Rol rol = Rol.jugador}) => Tokens(
 ///
 /// [preferencias]: por defecto, tutorial ya visto y tema [tema] (Expediente).
 /// [reproductor]: por defecto, uno que no suena.
+/// [conectorWs]: por defecto, el WebSocket nunca conecta (solo REST).
 Widget appDePrueba(
   ApiService api, {
   String inicial = Rutas.estudiantes,
@@ -35,6 +38,7 @@ Widget appDePrueba(
   TemaJuego tema = TemaJuego.expediente,
   Preferencias? preferencias,
   Reproductor? reproductor,
+  ConectorWs? conectorWs,
 }) => ProviderScope(
   retry: sinReintentos,
   overrides: [
@@ -46,6 +50,7 @@ Widget appDePrueba(
           }),
     ),
     reproductorProvider.overrideWithValue(reproductor ?? ReproductorMudo()),
+    conectorWsProvider.overrideWithValue(conectorWs ?? sinWebSocket),
     apiServiceProvider.overrideWithValue(api),
     almacenRefreshProvider.overrideWithValue(almacen ?? AlmacenEnMemoria()),
     if (conSesion)
@@ -66,3 +71,7 @@ class ReproductorMudo implements Reproductor {
   @override
   Future<void> reproducir(Sonido sonido) async => sonados.add(sonido);
 }
+
+/// Un WebSocket que nunca conecta (como una red que lo bloquea).
+Future<ConexionWs> sinWebSocket(Uri url) async =>
+    throw StateError('Sin WebSocket en los tests');

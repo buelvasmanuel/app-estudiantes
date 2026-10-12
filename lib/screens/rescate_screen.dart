@@ -598,7 +598,7 @@ class _Recompensa extends StatelessWidget {
                 Expanded(
                   child: Text(
                     xp > 0
-                        ? '+$xp XP · ${r.progreso.xp} XP en total'
+                        ? '+$xp XP · ${formatoEntero(r.progreso.xp)} XP en total'
                         : 'Sin XP: no mejoras tu récord'
                               '${record == null ? '' : ' ($record ${record == 1 ? 'estrella' : 'estrellas'})'}'
                               ' con este estudiante.',

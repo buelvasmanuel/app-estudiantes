@@ -12,6 +12,7 @@ import 'casos_screen.dart';
 import '../tema/temas.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
+import '../formato.dart';
 
 /// Pestaña "Perfil": el detective (nivel, cifras, insignias) y el ranking.
 class PerfilScreen extends ConsumerWidget {
@@ -144,7 +145,7 @@ class _Cabecera extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  '${p.xp} XP',
+                  '${formatoEntero(p.xp)} XP',
                   key: const Key('xp-perfil'),
                   style: tema.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w700,
@@ -157,7 +158,7 @@ class _Cabecera extends StatelessWidget {
               container: true,
               label: siguiente == null
                   ? 'Nivel máximo alcanzado'
-                  : 'Te faltan ${siguiente.xpDesde - p.xp} XP para '
+                  : 'Te faltan ${formatoEntero(siguiente.xpDesde - p.xp)} XP para '
                         '${siguiente.nombre}',
               excludeSemantics: true,
               child: Column(
@@ -172,8 +173,8 @@ class _Cabecera extends StatelessWidget {
                   Text(
                     siguiente == null
                         ? '¡Nivel máximo! Eres ${p.nivel.nombre}.'
-                        : '${p.xp} / ${siguiente.xpDesde} XP · te faltan '
-                              '${siguiente.xpDesde - p.xp} para '
+                        : '${formatoEntero(p.xp)} / ${formatoEntero(siguiente.xpDesde)} XP · te faltan '
+                              '${formatoEntero(siguiente.xpDesde - p.xp)} para '
                               '${siguiente.nombre}',
                     style: tema.textTheme.bodySmall,
                   ),
@@ -423,7 +424,7 @@ class _Tabla extends StatelessWidget {
               title: Text(p.soyYo ? '${p.alias} (tú)' : p.alias),
               subtitle: Text(p.nivel),
               trailing: Text(
-                '${p.xp} XP',
+                '${formatoEntero(p.xp)} XP',
                 style: tema.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -433,7 +434,7 @@ class _Tabla extends StatelessWidget {
         if (!estoyEnLaLista && r.miPosicion != null) ...[
           const Divider(height: 24),
           Text(
-            'Tu posición: ${r.miPosicion}.º con ${r.miXp} XP',
+            'Tu posición: ${r.miPosicion}.º con ${formatoEntero(r.miXp ?? 0)} XP',
             textAlign: TextAlign.center,
             style: tema.textTheme.titleSmall,
           ),

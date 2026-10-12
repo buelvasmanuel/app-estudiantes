@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../formato.dart';
 import '../theme.dart';
+import 'apariencia_rive.dart';
 
 /// Estado de ánimo del búho guía.
 enum AnimoBuho { atento, pensando, preocupado, contento, celebrando }
@@ -25,9 +26,14 @@ abstract class AparienciaLaboratorio {
   Widget buho({required AnimoBuho animo, double tamano = 64});
 }
 
-final aparienciaLaboratorioProvider = Provider<AparienciaLaboratorio>(
-  (ref) => const AparienciaFlutter(),
-);
+/// Rive si sus `.riv` están y cumplen docs/CONTRATO_RIVE.md; si no (o
+/// mientras cargan), lo dibujado con Flutter.
+final aparienciaLaboratorioProvider = Provider<AparienciaLaboratorio>((ref) {
+  final archivos = ref.watch(archivosRiveProvider).value;
+  return archivos == null || archivos.vacio
+      ? const AparienciaFlutter()
+      : AparienciaRive(archivos);
+});
 
 /// Búho y medidor dibujados con CustomPainter.
 class AparienciaFlutter extends AparienciaLaboratorio {
@@ -61,7 +67,6 @@ class MedidorRiesgo extends StatelessWidget {
     final tema = Theme.of(context);
     final estado = ColoresEstado.of(context);
     final porcentaje = (probabilidad * 100).round();
-    final enRiesgo = probabilidad >= objetivo;
     return Semantics(
       container: true,
       label:
@@ -85,32 +90,57 @@ class MedidorRiesgo extends StatelessWidget {
               colorAguja: tema.colorScheme.onSurface,
               fondo: tema.colorScheme.surfaceContainerHighest,
             ),
-            child: Align(
-              // Por encima de la franja inferior, por donde pasa la aguja
-              // cuando el riesgo es muy alto o muy bajo.
-              alignment: const Alignment(0, 0.55),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    formatoPorcentaje(porcentaje),
-                    key: const Key('porcentaje-medidor'),
-                    style: tema.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: enRiesgo ? estado.riesgo : estado.ok,
-                    ),
-                  ),
-                  Text(
-                    'riesgo según el modelo',
-                    style: tema.textTheme.labelSmall?.copyWith(
-                      color: tema.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
+            child: LeyendaMedidor(
+              probabilidad: probabilidad,
+              objetivo: objetivo,
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// El texto del medidor (lo usan el de Flutter y el de Rive): el porcentaje
+/// y qué es. Nunca se anima.
+class LeyendaMedidor extends StatelessWidget {
+  const LeyendaMedidor({
+    super.key,
+    required this.probabilidad,
+    required this.objetivo,
+  });
+
+  final double probabilidad;
+  final double objetivo;
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    final estado = ColoresEstado.of(context);
+    final porcentaje = (probabilidad * 100).round();
+    final enRiesgo = probabilidad >= objetivo;
+    return Align(
+      // Por encima de la franja inferior, por donde pasa la aguja cuando el
+      // riesgo es muy alto o muy bajo.
+      alignment: const Alignment(0, 0.55),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            formatoPorcentaje(porcentaje),
+            key: const Key('porcentaje-medidor'),
+            style: tema.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: enRiesgo ? estado.riesgo : estado.ok,
+            ),
+          ),
+          Text(
+            'riesgo según el modelo',
+            style: tema.textTheme.labelSmall?.copyWith(
+              color: tema.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

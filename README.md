@@ -218,7 +218,8 @@ lib/
 │   ├── modelo.dart            # Caso, Intervencion, Explicacion, ResultadoRescate
 │   ├── rescate.dart           # Reglas en local (fichas, topes, combinaciones)
 │   ├── laboratorio_api.dart   # Endpoints; todas las combinaciones en 1 petición
-│   ├── apariencia.dart        # Interfaz búho + medidor (hoy Flutter, mañana Rive)
+│   ├── apariencia.dart        # Interfaz búho + medidor; versión dibujada en Flutter
+│   ├── apariencia_rive.dart   # Versión Rive (docs/CONTRATO_RIVE.md); si falta un .riv, Flutter
 │   ├── textos.dart            # Lo que dice el búho ("según el modelo…")
 │   └── explicacion_vista.dart # El "¿por qué?" y el aviso del modelo
 ├── juego/                     # Casos, progreso, insignias, ranking (CONTRATO_JUEGO.md)
@@ -615,6 +616,24 @@ flutter test integration_test/duelo_real_test.dart -d linux \
   --dart-define=ALIAS=… --dart-define=PASSWORD=… \
   --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
 ```
+
+## Búho y medidor en Rive (preparado)
+
+El búho y el medidor de riesgo pueden ser animaciones de Rive que reaccionan a
+los datos (`animo`, `probabilidad`…). La app ya está lista
+(`lib/laboratorio/apariencia_rive.dart`, paquete `rive` 0.14): en cuanto haya
+`assets/rive/buho.riv` y `assets/rive/medidor.riv` que cumplan
+[`docs/CONTRATO_RIVE.md`](docs/CONTRATO_RIVE.md), los usa. Mientras falten, o
+si un archivo no cumple el contrato, ese elemento se sigue dibujando con
+Flutter, sin errores.
+
+- **Comprobar un `.riv`:** `flutter test test/rive_contrato_test.dart` dice en
+  español qué falta (artboard, máquina de estados, propiedad o valor del enum).
+- **Tests:** necesitan la librería nativa de Rive del equipo (una vez):
+  `dart run rive_native:setup --platform linux` (el CI lo hace solo).
+- **Peso:** el APK crece unos 0,8 MB; en la web, el motor de Rive (WASM,
+  ~3 MB) se descarga solo la primera vez que hace falta, es decir, cuando
+  hay `.riv`.
 
 ## Temas: Noche y Expediente
 

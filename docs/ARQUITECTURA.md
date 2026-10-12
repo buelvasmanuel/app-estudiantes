@@ -271,3 +271,14 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   conectan. Prueba real con dos cuentas (`duelo_jugador_real_test.dart`).
 - **XP con punto de miles** en chip, perfil, ranking, docente y celebración
   (`formatoEntero`).
+- **Fase 7.3, Rive (preparado, sin animaciones todavía):** `rive` 0.14.11
+  (`rive_native`). `archivosRiveProvider` carga `assets/rive/buho.riv` y
+  `medidor.riv` y los valida con `ContratoRive` (docs/CONTRATO_RIVE.md:
+  artboard, máquina de estados, propiedades del view model y sus tipos; los
+  valores del enum se prueban asignándolos). `aparienciaLaboratorioProvider`
+  elige `AparienciaRive` si hay alguno válido; lo que falte se delega en
+  `AparienciaFlutter`. Se renderiza con `Factory.flutter` y se enlaza con
+  `DataBind.auto()`. El texto del medidor (`LeyendaMedidor`) y la semántica
+  son de Flutter en las dos versiones. En la web, el WASM de Rive viene de
+  jsDelivr al cargar el primer `.riv`. El CI instala la librería nativa
+  (`dart run rive_native:setup --platform linux`) para `flutter test`.

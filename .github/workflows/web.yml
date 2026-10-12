@@ -39,6 +39,8 @@ jobs:
           cache: true
 
       - run: flutter pub get
+      # Librería nativa de Rive para los tests (rive_native, Linux).
+      - run: dart run rive_native:setup --platform linux
       - run: flutter analyze
       - run: flutter test
 

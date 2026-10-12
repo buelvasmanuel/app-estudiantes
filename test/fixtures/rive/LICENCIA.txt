@@ -1,0 +1,4 @@
+rating.riv viene de los ejemplos del runtime oficial de Rive para Flutter:
+https://github.com/rive-app/rive-flutter/tree/master/example/assets
+Licencia MIT (Copyright (c) 2020 Rive). Se usa solo en los tests, como archivo
+real que NO cumple docs/CONTRATO_RIVE.md.

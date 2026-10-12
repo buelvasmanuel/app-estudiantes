@@ -79,13 +79,14 @@ void main() {
     final explicaciones = <String>[];
     for (var paso = 0; paso < 20; paso++) {
       await tester.pumpAndSettle();
-      if (find.byKey(const Key('resultado-duelo')).evaluate().isNotEmpty) {
-        break;
-      }
+      // La celebración va encima del resultado: primero ella.
       if (find.byType(CelebracionVista).evaluate().isNotEmpty) {
         await capturar(tester, '21_duelo_insignia');
         await tester.tap(find.text('¡Seguir!'));
         continue;
+      }
+      if (find.byKey(const Key('resultado-duelo')).evaluate().isNotEmpty) {
+        break;
       }
       if (find.byKey(const Key('continuar-duelo')).evaluate().isNotEmpty) {
         await capturar(tester, '18_duelo_revelado');

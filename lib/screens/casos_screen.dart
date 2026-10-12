@@ -157,6 +157,11 @@ class TarjetaDuelo extends StatelessWidget {
     return Card.outlined(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
+      // El borde por defecto (outlineVariant) casi no se ve en los dos temas.
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: tema.colorScheme.outline),
+      ),
       child: InkWell(
         key: const Key('tarjeta-duelo'),
         onTap: () => context.go(Rutas.duelo),

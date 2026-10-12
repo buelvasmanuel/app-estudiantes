@@ -142,6 +142,10 @@ class _CartaRivalState extends State<CartaRival>
     return Card.outlined(
       key: const Key('carta-rival-boca-abajo'),
       margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(papel ? 4 : 16),
+        side: BorderSide(color: tema.colorScheme.outline),
+      ),
       child: Semantics(
         container: true,
         label: 'Carta de ${widget.alias}, boca abajo',
@@ -269,7 +273,7 @@ class MarcoCarta extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(sellos ? 4 : 16),
         side: BorderSide(
-          color: colores?.borde ?? tema.colorScheme.outlineVariant,
+          color: colores?.borde ?? tema.colorScheme.outline,
           width: colores == null ? 1 : 2.5,
         ),
       ),

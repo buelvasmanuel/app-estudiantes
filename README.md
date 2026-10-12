@@ -619,6 +619,29 @@ flutter test integration_test/duelo_real_test.dart -d linux \
 
 ## Búho y medidor en Rive (preparado)
 
+> **Rama aparcada (2026-10-12).** Esta rama (`fase-7-3-rive`) **no está unida
+> a `main`** a propósito: no hay `.riv` todavía. Cómo retomarla:
+>
+> 1. `git switch fase-7-3-rive && git merge main`, y resolver conflictos (lo
+>    nuevo de esta rama está en `lib/laboratorio/apariencia_rive.dart`,
+>    `apariencia.dart`, `docs/CONTRATO_RIVE.md`, `test/rive*_test.dart` y el
+>    paso de `rive_native` en `.github/workflows/web.yml`).
+> 2. `flutter pub upgrade rive` y comprobar que la API (`RiveWidgetController`,
+>    `DataBind.auto()`, `ViewModelInstance.enumerator/number/color/boolean`)
+>    no cambió; `dart run rive_native:setup --platform linux` para los tests.
+> 3. Copiar `buho.riv` y `medidor.riv` a `assets/rive/` y pasar
+>    `flutter test test/rive_contrato_test.dart` hasta que no falte nada.
+> 4. **WASM de Rive alojado en la propia web, no en jsDelivr** (decisión del
+>    usuario): copiar `wasm/rive_native.js` y `wasm/rive_native.wasm` (y la
+>    carpeta `wasm_compatibility/`) de `@rive-app/flutter-native-wasm` con la
+>    versión que pida `rive_native` a `web/rive/`, y compilar la web con
+>    `--dart-define=RIVE_NATIVE_WASM_HOST=https://buelvasmanuel.github.io/app-estudiantes/rive/`
+>    (en `rive_native` 0.1.11 es una constante de compilación; añadirla al
+>    paso «Compilar web» del workflow). Comprobar en el navegador que no hay
+>    peticiones a `cdn.jsdelivr.net`.
+> 5. Capturas en los dos temas, revisión de movimiento (§4 del contrato),
+>    medir el peso de la web y del APK, y entonces unir a `main` y publicar.
+
 El búho y el medidor de riesgo pueden ser animaciones de Rive que reaccionan a
 los datos (`animo`, `probabilidad`…). La app ya está lista
 (`lib/laboratorio/apariencia_rive.dart`, paquete `rive` 0.14): en cuanto haya

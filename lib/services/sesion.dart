@@ -144,6 +144,20 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
     await _cerrarLocal(aviso: avisoTodas);
   }
 
+  /// Un access válido para lo que no pasa por el interceptor (el WebSocket
+  /// del duelo, CONTRATO_DUELO §8). Lo renueva si le queda poco o si
+  /// [forzar] (la API lo rechazó con 4401). `null` sin sesión.
+  Future<String?> accessVigente({bool forzar = false}) async {
+    final enCurso = _renovacion;
+    if (enCurso != null) await enCurso;
+    final tokens = _tokens;
+    if (tokens != null &&
+        (forzar || !_ahora().isBefore(tokens.accessCaduca.subtract(margen)))) {
+      await _renovar();
+    }
+    return _tokens?.access;
+  }
+
   // --- Interceptor -----------------------------------------------------------
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers.dart';
 import '../services/api_service.dart';
+import 'canal.dart';
 import 'modelo.dart';
 
 /// Endpoints de docs/CONTRATO_DUELO.md. Todos requieren sesión: pasan por el
@@ -24,6 +25,26 @@ class DueloApi {
     'tiempo_agotado',
     'duelo_terminado',
   };
+
+  /// Duelos con XP de hoy en cada modo (vacío si la API aún no lo manda).
+  Future<Map<ModoDuelo, XpHoy>> xpHoy() async =>
+      _api.parsear(await _api.get('/duelos?estado=en_juego'), XpHoy.deLista);
+
+  /// Busca rival (§7.1): empareja con quien espera, o deja el duelo
+  /// `esperando` (60 s). Si ya había uno contra un jugador en juego
+  /// (`409 duelo_en_curso`), lo retoma.
+  Future<Duelo> buscarRival() async {
+    try {
+      return _api.parsear<Duelo>(
+        await _api.post('/duelos', {'modo': 'jugador'}),
+        Duelo.fromJson,
+      );
+    } on ApiException catch (e) {
+      final id = e.detalle?['duelo_id'];
+      if (e.codigo == 'duelo_en_curso' && id is String) return await duelo(id);
+      rethrow;
+    }
+  }
 
   /// El duelo contra la máquina que estaba a medias, si hay uno.
   Future<String?> enJuegoContraMaquina() async {
@@ -94,4 +115,12 @@ class DueloApi {
 
 final dueloApiProvider = Provider<DueloApi>(
   (ref) => DueloApi(ref.watch(apiServiceProvider)),
+);
+
+/// Cómo se abre el WebSocket del duelo (los tests lo sustituyen).
+final conectorWsProvider = Provider<ConectorWs>((ref) => conectarWs);
+
+/// Duelos con XP de hoy en cada modo, para la pantalla de elegir rival.
+final xpHoyDuelosProvider = FutureProvider.autoDispose<Map<ModoDuelo, XpHoy>>(
+  (ref) => ref.watch(dueloApiProvider).xpHoy(),
 );

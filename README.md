@@ -228,7 +228,8 @@ lib/
 │   └── lote.dart              # Revisión de la lista de alias del docente
 ├── duelo/                     # Duelo de cartas (CONTRATO_DUELO.md)
 │   ├── modelo.dart            # Carta, Ronda, Duelo; formato de cada atributo
-│   ├── duelo_api.dart         # Endpoints; abrir (retomar o crear) y jugar con reintentos
+│   ├── duelo_api.dart         # Endpoints; abrir (retomar o crear), buscar rival, jugar con reintentos
+│   ├── canal.dart             # WebSocket de avisos: auth, ping, errores, reconexión
 │   └── cartas.dart            # Carta rival (se gira), carta propia y filas de atributos
 ├── campus/                    # Pestaña Campus
 │   ├── modelo.dart            # Campus y Edificio (pisos = semestres)
@@ -256,7 +257,8 @@ lib/
 │   ├── campus_screen.dart     # Leyenda, mapa, lista de edificios y paneles
 │   ├── casos_screen.dart      # Casos por nivel
 │   ├── caso_juego_screen.dart # Un caso: ficha, opciones y veredicto
-│   ├── duelo_screen.dart      # El duelo: marcador, cartas, búho y resultado
+│   ├── elegir_rival_screen.dart # Búho Máquina u otro detective (XP de hoy de cada modo)
+│   ├── duelo_screen.dart      # El duelo: búsqueda, marcador, reloj, cartas, búho y resultado
 │   ├── perfil_screen.dart     # Detective (nivel, insignias) y ranking
 │   ├── docente_screen.dart    # Alta de cuentas en lote y lista de jugadores
 │   ├── laboratorio_screen.dart # Lista de casos del Laboratorio
@@ -523,16 +525,18 @@ flutter test integration_test/juego_real_test.dart -d linux \
   <img src="docs/capturas/expediente/20_duelo_resultado.png" width="180" alt="Duelo: resultado (expediente)">
 </p>
 
-Implementa `docs/CONTRATO_DUELO.md` v1 (contra la máquina). Se entra desde la
-tarjeta «¿Un duelo?», arriba en **Casos**, o desde el **Perfil**.
+Implementa `docs/CONTRATO_DUELO.md` 2.2: contra el **Búho Máquina** o contra
+**otro detective**. Se entra desde la tarjeta «¿Un duelo?», arriba en
+**Casos**, o desde el **Perfil**, y primero se elige rival (cada modo dice
+cuántos duelos con XP llevas hoy: el límite de 3 es aparte para cada uno).
 
 - **Cartas = estudiantes reales**, con promedio, asistencia, horas de estudio
   y semestre, cada uno con su **percentil** (la barra). 5 rondas; quien tiene
   el turno elige el atributo viendo solo su carta y gana el valor más alto.
   En el turno de la máquina, «Ver jugada del rival».
 - **Todo lo decide el servidor:** reparto, turno, ganador de cada ronda,
-  resultado y XP (30/15/5, solo los 3 primeros duelos del día). La cabecera
-  dice cuántos llevas hoy.
+  resultado y XP (máquina 30/15/5, jugadores 40/20/10; solo los 3 primeros
+  duelos del día de cada modo). La cabecera dice cuántos llevas hoy.
 - **Animación protagonista:** al resolverse la ronda, la carta del rival se
   **gira** (350 ms, un toque la termina; con "reducir movimiento" aparece ya
   girada). Lo demás no se mueve. En Expediente, sellos GANA / PIERDE; en
@@ -545,11 +549,61 @@ tarjeta «¿Un duelo?», arriba en **Casos**, o desde el **Perfil**.
   duelo y aparece «Reintentar». Ante un 409 (ronda o turno que ya no tocan),
   se pide el estado y se sigue desde ahí.
 - **Abandonar** (bandera arriba) pide confirmación: cuenta como derrota, sin XP.
-- **Preparado para la v2** (jugador contra jugador), sin funcionalidad aún:
-  la cabecera ya enseña el alias del rival, un hueco para la cuenta atrás del
-  turno y el aviso de rival desconectado; y el turno del otro jugador es un
-  estado de espera «Esperando a…» con indicador de progreso, que no parece un
-  botón ni se puede pulsar.
+
+### Contra otro detective (v2)
+
+<p>
+  <img src="docs/capturas/noche/23_duelo_buscando.png" width="180" alt="Buscando rival (noche)">
+  <img src="docs/capturas/noche/27_duelo_cuenta_atras.png" width="180" alt="Tu turno con la cuenta atrás (noche)">
+  <img src="docs/capturas/noche/29_duelo_rival_desconectado.png" width="180" alt="Rival desconectado (noche)">
+  <img src="docs/capturas/noche/30_duelo_abandono_rival.png" width="180" alt="Victoria por abandono (noche)">
+</p>
+<p>
+  <img src="docs/capturas/expediente/24_duelo_emparejado.png" width="180" alt="Rival encontrado (expediente)">
+  <img src="docs/capturas/expediente/26_duelo_turno_rival.png" width="180" alt="Turno del rival (expediente)">
+  <img src="docs/capturas/expediente/28_duelo_ronda_por_tiempo.png" width="180" alt="Ronda perdida por tiempo (expediente)">
+  <img src="docs/capturas/expediente/22_duelo_elegir_rival.png" width="180" alt="Elegir rival (expediente)">
+</p>
+
+- **Buscar rival:** hasta 60 s, con un anillo que cuenta el minuto y
+  «Cancelar búsqueda» (salir de la pantalla también la cancela). Si nadie
+  aparece: «Buscar otra vez» o jugar contra el Búho Máquina. Quien esperaba
+  empieza.
+- **Turnos de 45 s** con cuenta atrás en la cabecera. Con ≤ 10 s de tu turno
+  se pone roja, en negrita y con borde (no solo color), y el búho avisa sin
+  repetir segundos (el número solo va en el reloj). El lector de pantalla
+  anuncia solo los 30 y los 10 s. Al llegar a 0, la app pide el duelo (no
+  hay temporizadores en el servidor): la ronda es para el otro y el búho lee
+  la explicación de la API. Dos turnos tuyos vencidos seguidos = abandono.
+- **Turno del rival:** «Esperando a <alias>…», un estado de espera que no
+  parece un botón ni se puede pulsar; si el rival cierra la app, la cabecera
+  dice «se desconectó».
+- **Abandonos:** quien abandona pierde sin XP. Quien gana por abandono del
+  otro recibe XP solo si ya se habían resuelto 3 rondas; la pantalla explica
+  por qué, con la XP que manda el servidor.
+- **WebSocket solo de avisos** (`lib/duelo/canal.dart`): se autentica con el
+  primer mensaje (sin token en la URL), manda `ping` cada 25 s, actúa al
+  recibir el mensaje `error` (cierra ella y aplica la tabla de códigos sin
+  esperar el código de cierre, que detrás de Render/Cloudflare puede no
+  llegar) y se reconecta con espera creciente (1, 2, 4… hasta 30 s),
+  resincronizando con `GET /duelos/{id}` al volver. **Sin WebSocket la
+  partida sigue igual**: la app consulta el duelo por REST cada 3 s.
+- En un celular de 360×640, en tu turno se ven los 4 atributos sin
+  desplazar (la carta del rival boca abajo es baja). Un test lo comprueba con
+  las fuentes reales.
+
+Un duelo entre dos cuentas en la API real: A juega con la app y B lo maneja
+el test por REST y con su propio WebSocket (A busca, B se une, A juega, B
+juega, A deja vencer su turno, B se desconecta y abandona). Mide que los
+avisos lleguen por WebSocket (< 2,5 s) y guarda las capturas 22-30:
+
+```bash
+flutter test integration_test/duelo_jugador_real_test.dart -d linux \
+  --dart-define=TEMA=noche --dart-define=API_URL=https://api-tienda-wjac.onrender.com \
+  --dart-define=ALIAS=… --dart-define=PASSWORD=… \
+  --dart-define=ALIAS_B=… --dart-define=PASSWORD_B=… \
+  --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
+```
 
 Un duelo entero contra la API real (retoma o empieza uno y juega siempre el
 atributo con el percentil más alto); con `CAPTURAS_DIR` guarda las capturas

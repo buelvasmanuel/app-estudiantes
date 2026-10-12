@@ -3,6 +3,7 @@ import 'package:app_estudiantes/duelo/modelo.dart';
 import 'package:app_estudiantes/juego/celebracion.dart';
 import 'package:app_estudiantes/router.dart';
 import 'package:app_estudiantes/screens/duelo_screen.dart';
+import 'package:app_estudiantes/screens/elegir_rival_screen.dart';
 import 'package:app_estudiantes/tema/temas.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,7 +14,7 @@ import 'support/duelo_falso.dart';
 Future<void> _abrir(
   WidgetTester tester,
   DueloFalso servidor, {
-  String ruta = Rutas.duelo,
+  String ruta = Rutas.dueloMaquina,
   TemaJuego tema = TemaJuego.expediente,
 }) async {
   tester.view.physicalSize = const Size(412, 2000);
@@ -25,9 +26,13 @@ Future<void> _abrir(
   await tester.pumpAndSettle();
 }
 
-/// Las peticiones al duelo (sin las del resto del juego).
-List<String> _peticiones(DueloFalso s) =>
-    s.registro.map((r) => r.split(' ').take(2).join(' ')).toList();
+/// Las peticiones al duelo (sin las del resto del juego). Al abrir el duelo
+/// por su ruta, debajo queda la pantalla de elegir rival, que pide su «XP
+/// hoy» (`GET /duelos?estado=en_juego`): esa primera petición no se cuenta.
+List<String> _peticiones(DueloFalso s, {bool desdeElegir = true}) {
+  final todas = s.registro.map((r) => r.split(' ').take(2).join(' ')).toList();
+  return desdeElegir ? todas.skip(1).toList() : todas;
+}
 
 Future<void> _elegir(WidgetTester tester, String atributo) async {
   await tester.tap(find.byKey(Key('atributo-$atributo')));
@@ -158,10 +163,18 @@ void main() {
       lessThan(tester.getTopLeft(find.textContaining('resueltos')).dy),
     );
 
+    // Primero se elige rival.
     await tester.tap(tarjeta);
     await tester.pumpAndSettle();
+    expect(find.byType(ElegirRivalScreen), findsOneWidget);
+    await tester.tap(find.byKey(const Key('elegir-maquina')));
+    await tester.pumpAndSettle();
 
-    expect(_peticiones(s), ['GET /duelos?estado=en_juego', 'POST /duelos']);
+    expect(_peticiones(s, desdeElegir: false), [
+      'GET /duelos?estado=en_juego', // XP de hoy de cada modo
+      'GET /duelos?estado=en_juego', // ¿hay uno a medias?
+      'POST /duelos',
+    ]);
     expect(s.registro.last, contains('{"modo":"maquina"}'));
     expect(_marcador(tester), 'Tú 0 — 0 Búho Máquina');
     expect(_texto(tester, 'fase-duelo'), 'Ronda 1 de 5 · tu turno');
@@ -173,6 +186,8 @@ void main() {
     expect(find.text('92 %'), findsOneWidget);
     expect(find.text('percentil 81'), findsOneWidget);
     expect(find.byKey(const Key('cuenta-atras')), findsNothing);
+    // Contra la máquina no hay "rival encontrado" ni turnos de 45 s.
+    expect(find.byKey(const Key('aviso-emparejado')), findsNothing);
   });
 
   testWidgets('desde el Perfil también se llega al duelo', (tester) async {
@@ -180,7 +195,7 @@ void main() {
     await _abrir(tester, s, ruta: Rutas.perfil);
     await tester.tap(find.byKey(const Key('tarjeta-duelo')));
     await tester.pumpAndSettle();
-    expect(find.byType(DueloScreen), findsOneWidget);
+    expect(find.byType(ElegirRivalScreen), findsOneWidget);
   });
 
   testWidgets('al abrir, retoma el duelo a medias en vez de crear otro', (
@@ -456,7 +471,8 @@ void main() {
       );
       await tester.pumpWidget(enApp(MarcadorDuelo(duelo: d)));
       expect(_marcador(tester), 'Tú 1 — 0 Laura_P');
-      expect(find.text('0:38'), findsOneWidget);
+      // Redondea hacia arriba: con 38,5 s quedan "0:39" (al empezar, "0:45").
+      expect(find.text('0:39'), findsOneWidget);
       expect(find.text('Laura_P se desconectó'), findsOneWidget);
       expect(CuentaAtras.texto(const Duration(seconds: 75)), '1:15');
       expect(CuentaAtras.texto(const Duration(seconds: -3)), '0:00');

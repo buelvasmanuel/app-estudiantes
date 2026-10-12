@@ -9,6 +9,7 @@ import '../models/sesion.dart';
 import '../providers.dart';
 import '../services/api_service.dart';
 import '../widgets/estado_vistas.dart';
+import '../formato.dart';
 
 /// Panel del docente: crear cuentas para la clase y ver a los jugadores.
 /// Solo para los roles docente y admin (la API también lo exige).
@@ -371,7 +372,7 @@ class _FilaJugador extends StatelessWidget {
       ),
       isThreeLine: true,
       trailing: Text(
-        '${j.xp} XP',
+        '${formatoEntero(j.xp)} XP',
         style: tema.textTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.w700,
         ),

@@ -255,3 +255,19 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   número (coma decimal y punto de miles de Colombia, `%` tras espacio no
   separable). Sustituye a los `toStringAsFixed` repartidos por Campus,
   Datos, Laboratorio, gráficas y pastillas.
+- **Fase 7.2, duelo entre jugadores** (CONTRATO_DUELO 2.1/2.2): rutas
+  `/casos/duelo` (elegir rival, con `xp_hoy` de `GET /duelos`),
+  `/casos/duelo/maquina` y `/casos/duelo/jugador`. `CanalDuelo`
+  (`lib/duelo/canal.dart`, `web_socket_channel`) solo trae avisos: auth en el
+  primer mensaje, ping cada 25 s, actúa con el mensaje `error` (4401 →
+  `GestorSesion.accessVigente(forzar: true)` y reconecta; 4403/4404 → no
+  reconecta; el resto, espera creciente hasta 30 s) y pide resincronizar al
+  volver. Mientras no está conectado, la pantalla consulta `GET /duelos/{id}`
+  cada 3 s; todo lo que cambia el duelo va por REST. Los estados se aplican
+  por `actualizado_en` (una respuesta vieja no pisa una nueva, lleguen por
+  REST o por WebSocket). El reloj usa `package:clock` (los tests adelantan el
+  tiempo) y al llegar a 0 pide el duelo. El conector WebSocket es un
+  provider (`conectorWsProvider`): los tests lo simulan y, por defecto, nunca
+  conectan. Prueba real con dos cuentas (`duelo_jugador_real_test.dart`).
+- **XP con punto de miles** en chip, perfil, ranking, docente y celebración
+  (`formatoEntero`).

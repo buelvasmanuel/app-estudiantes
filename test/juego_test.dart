@@ -274,4 +274,17 @@ void main() {
     expect(find.text('+30 XP · 160 XP en total'), findsOneWidget);
     expect(find.text('Insignia nueva: Rescate perfecto'), findsOneWidget);
   });
+
+  testWidgets('la XP acumulada lleva punto de miles (formato de Colombia)', (
+    tester,
+  ) async {
+    final juego = JuegoFalso()..xp = 1250;
+    await _abrir(tester, juego, Rutas.perfil);
+    expect(find.text('Nv 3 · 1.250 XP'), findsOneWidget); // chip
+    expect(find.byKey(const Key('xp-perfil')), findsOneWidget);
+    expect(
+      (tester.widget<Text>(find.byKey(const Key('xp-perfil')))).data,
+      '1.250 XP',
+    );
+  });
 }

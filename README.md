@@ -25,9 +25,9 @@ arriba **Noche**, abajo **Expediente**.
 | Pestaña | Qué hace | Endpoints |
 |---|---|---|
 | **Campus** | Mapa 2.5D (Flame): cada edificio es una carrera, cada piso un semestre y cada ventana un estudiante, roja si está en riesgo. Tocar un edificio abre su expediente; tocar una ventana, la ficha del estudiante | `GET /estudiantes/` |
-| **Casos** | 9 preguntas en 3 niveles que se resuelven mirando los datos (con la gráfica que ayuda como «ficha del caso»). El servidor decide si es correcto y cuánta XP da; el búho da el dato real, la explicación o la pista | `/juego/casos/*` |
+| **Casos** | Arriba, «¿Un duelo?»: el [duelo de cartas](#duelo-de-cartas) contra el Búho Máquina. Debajo, 9 preguntas en 3 niveles que se resuelven mirando los datos (con la gráfica que ayuda como «ficha del caso»). El servidor decide si es correcto y cuánta XP da; el búho da el dato real, la explicación o la pista | `/juego/casos/*`, `/duelos/*` |
 | **Laboratorio** | Juego de rescate: con 5 fichas (plan de estudio, tutoría) hay que bajar de 50 % el riesgo que estima el modelo para un estudiante real. Medidor en vivo, búho guía, estrellas que decide el servidor y el «¿por qué?» con el peso de cada variable | `/laboratorio/*`, `POST /prediccion/riesgo/lote` |
-| **Datos → Estudiantes** | Listado con buscador, filtro "en riesgo", indicador de color (promedio < 3.0), pull-to-refresh y pantalla de detalle | `GET /estudiantes/` |
+| **Datos → Estudiantes** | Listado con buscador, filtro "en riesgo", indicador de color (promedio < 3,0), pull-to-refresh y pantalla de detalle | `GET /estudiantes/` |
 | **Datos → Gráficas** | Gráfica de barras (fl_chart) de 6 estadísticas, con el valor encima de cada barra y un resumen | `GET /estudiantes/estadisticas/{tipo}` |
 | **Datos → Predicción** | Formulario (carrera + 4 sliders) que predice el riesgo académico, con el resultado en rojo/verde y las métricas del modelo | `GET /prediccion/metricas`, `POST /prediccion/riesgo` |
 | **Perfil** | Nivel, XP y avance, racha, casos, rescates, estrellas e insignias; ranking semanal e histórico. Los docentes entran desde aquí a su panel | `/juego/progreso`, `/juego/ranking` |
@@ -211,7 +211,7 @@ En `android/app/src/main/AndroidManifest.xml`:
 ```
 lib/
 ├── main.dart                  # ProviderScope + MaterialApp.router
-├── router.dart                # Rutas (go_router) y barra de 4 pestañas
+├── router.dart                # Rutas (go_router) y barra de 5 pestañas
 ├── providers.dart             # Providers de Riverpod (ApiService, sesión y datos)
 ├── config.dart                # URL de la API (--dart-define) y timeout
 ├── laboratorio/               # Pestaña Laboratorio (CONTRATO_LABORATORIO.md)
@@ -226,6 +226,10 @@ lib/
 │   ├── juego_api.dart         # Endpoints y providers (se rehacen al cambiar de cuenta)
 │   ├── celebracion.dart       # Subida de nivel / insignia nueva (≤ 1,2 s, saltable)
 │   └── lote.dart              # Revisión de la lista de alias del docente
+├── duelo/                     # Duelo de cartas (CONTRATO_DUELO.md)
+│   ├── modelo.dart            # Carta, Ronda, Duelo; formato de cada atributo
+│   ├── duelo_api.dart         # Endpoints; abrir (retomar o crear) y jugar con reintentos
+│   └── cartas.dart            # Carta rival (se gira), carta propia y filas de atributos
 ├── campus/                    # Pestaña Campus
 │   ├── modelo.dart            # Campus y Edificio (pisos = semestres)
 │   ├── disposicion.dart       # Geometría, cámara (Vista) y qué hay bajo un toque
@@ -235,6 +239,7 @@ lib/
 ├── tema/temas.dart            # Temas Noche y Expediente (+ fondo del campus, sello)
 ├── preferencias.dart          # Tema, sonidos y tutorial guardados en el dispositivo
 ├── sonidos.dart               # Efectos opcionales (apagados por defecto)
+├── formato.dart               # Números como en Colombia: "3,80", "1.250", "33,3 %"
 ├── models/
 │   ├── json_utils.dart        # Lectura segura de JSON (num, String, bool...)
 │   ├── estudiante.dart
@@ -251,6 +256,7 @@ lib/
 │   ├── campus_screen.dart     # Leyenda, mapa, lista de edificios y paneles
 │   ├── casos_screen.dart      # Casos por nivel
 │   ├── caso_juego_screen.dart # Un caso: ficha, opciones y veredicto
+│   ├── duelo_screen.dart      # El duelo: marcador, cartas, búho y resultado
 │   ├── perfil_screen.dart     # Detective (nivel, insignias) y ranking
 │   ├── docente_screen.dart    # Alta de cuentas en lote y lista de jugadores
 │   ├── laboratorio_screen.dart # Lista de casos del Laboratorio
@@ -502,6 +508,60 @@ flutter test integration_test/juego_real_test.dart -d linux \
   --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
 ```
 
+## Duelo de cartas
+
+<p>
+  <img src="docs/capturas/noche/17_duelo_tu_turno.png" width="180" alt="Duelo: tu turno (noche)">
+  <img src="docs/capturas/noche/18_duelo_revelado.png" width="180" alt="Duelo: carta del rival girada (noche)">
+  <img src="docs/capturas/noche/19_duelo_turno_rival.png" width="180" alt="Duelo: turno del rival (noche)">
+  <img src="docs/capturas/noche/20_duelo_resultado.png" width="180" alt="Duelo: resultado (noche)">
+</p>
+<p>
+  <img src="docs/capturas/expediente/17_duelo_tu_turno.png" width="180" alt="Duelo: tu turno (expediente)">
+  <img src="docs/capturas/expediente/18_duelo_revelado.png" width="180" alt="Duelo: carta del rival girada (expediente)">
+  <img src="docs/capturas/expediente/19_duelo_turno_rival.png" width="180" alt="Duelo: turno del rival (expediente)">
+  <img src="docs/capturas/expediente/20_duelo_resultado.png" width="180" alt="Duelo: resultado (expediente)">
+</p>
+
+Implementa `docs/CONTRATO_DUELO.md` v1 (contra la máquina). Se entra desde la
+tarjeta «¿Un duelo?», arriba en **Casos**, o desde el **Perfil**.
+
+- **Cartas = estudiantes reales**, con promedio, asistencia, horas de estudio
+  y semestre, cada uno con su **percentil** (la barra). 5 rondas; quien tiene
+  el turno elige el atributo viendo solo su carta y gana el valor más alto.
+  En el turno de la máquina, «Ver jugada del rival».
+- **Todo lo decide el servidor:** reparto, turno, ganador de cada ronda,
+  resultado y XP (30/15/5, solo los 3 primeros duelos del día). La cabecera
+  dice cuántos llevas hoy.
+- **Animación protagonista:** al resolverse la ronda, la carta del rival se
+  **gira** (350 ms, un toque la termina; con "reducir movimiento" aparece ya
+  girada). Lo demás no se mueve. En Expediente, sellos GANA / PIERDE; en
+  Noche, la cabecera de la carta lo dice con palabras.
+- **El búho lee la `explicacion` de la API tal cual** (qué significa ganar con
+  ese atributo, con los percentiles y la correlación real).
+- **Retomar y reintentar:** al abrir se retoma el duelo a medias (si no hay,
+  empieza uno). Si una jugada no llega (red o 5xx), se repite la misma (el
+  servidor no la juega dos veces); si sigue fallando, se pide el estado del
+  duelo y aparece «Reintentar». Ante un 409 (ronda o turno que ya no tocan),
+  se pide el estado y se sigue desde ahí.
+- **Abandonar** (bandera arriba) pide confirmación: cuenta como derrota, sin XP.
+- **Preparado para la v2** (jugador contra jugador), sin funcionalidad aún:
+  la cabecera ya enseña el alias del rival, un hueco para la cuenta atrás del
+  turno y el aviso de rival desconectado; y el turno del otro jugador es un
+  estado de espera «Esperando a…» con indicador de progreso, que no parece un
+  botón ni se puede pulsar.
+
+Un duelo entero contra la API real (retoma o empieza uno y juega siempre el
+atributo con el percentil más alto); con `CAPTURAS_DIR` guarda las capturas
+16-21:
+
+```bash
+flutter test integration_test/duelo_real_test.dart -d linux \
+  --dart-define=TEMA=noche --dart-define=API_URL=https://api-tienda-wjac.onrender.com \
+  --dart-define=ALIAS=… --dart-define=PASSWORD=… \
+  --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
+```
+
 ## Temas: Noche y Expediente
 
 <p>
@@ -553,6 +613,13 @@ licencia **CC0** (comprobada en el `License.txt` de cada pack; ver
 `assets/sonidos/LICENCIA.txt`).
 
 ## Detalles técnicos que vale la pena conocer
+
+- **Números como en Colombia:** coma decimal y punto de miles ("3,80",
+  "1.250", "33,3 %", con espacio no separable antes del %). Todo pasa por
+  `lib/formato.dart` (`formatoDecimal`, `formatoPromedio`, `formatoPorcentaje`,
+  `formatoProbabilidad`, `formatoEntero`): ninguna pantalla usa
+  `toStringAsFixed` para mostrar un número. Lo que llega de la API en texto
+  (la explicación del duelo, el dato de un caso) se muestra tal cual.
 
 - **El promedio llega como texto** (`"promedio": "3.95"`): en Python es un
   `Decimal` y Pydantic lo envía como string para no perder precisión. Por eso

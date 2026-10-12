@@ -1,4 +1,5 @@
 import 'json_utils.dart';
+import '../formato.dart';
 
 /// Un punto de una estadística: `{"etiqueta": "Medicina", "valor": 30}`.
 ///
@@ -102,9 +103,9 @@ enum TipoEstadistica {
 
   /// Texto del valor que se pinta encima de cada barra.
   String formatear(num valor) => switch (unidad) {
-    Unidad.conteo => valor.round().toString(),
-    Unidad.promedio => valor.toStringAsFixed(2),
-    Unidad.porcentaje => '${valor.toStringAsFixed(1)}%',
+    Unidad.conteo => formatoEntero(valor),
+    Unidad.promedio => formatoPromedio(valor),
+    Unidad.porcentaje => formatoPorcentaje(valor, 1),
   };
 
   /// Techo del eje Y. Se deja aire (~20 %) para que quepa el valor encima

@@ -83,7 +83,7 @@ void main() {
           c.vista.aPantalla(c.disposicion!.cuerpos[medicina]!.center, c.tamano),
     );
     await _avanzar(tester);
-    expect(find.textContaining('En riesgo: 1 (100 %)'), findsOneWidget);
+    expect(find.textContaining('En riesgo: 1 (100\u00A0%)'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Cerrar'));
     await _avanzar(tester, 600);

@@ -7,12 +7,12 @@ import 'package:go_router/go_router.dart';
 import '../laboratorio/apariencia.dart';
 import '../laboratorio/modelo.dart';
 import '../laboratorio/providers.dart';
-import '../laboratorio/textos.dart';
 import '../providers.dart';
 import '../router.dart';
 import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
+import '../formato.dart';
 
 /// Pestaña "Laboratorio": la lista de estudiantes que se pueden rescatar.
 class LaboratorioScreen extends ConsumerWidget {
@@ -78,7 +78,7 @@ class _Lista extends ConsumerWidget {
                             'Estos estudiantes están en riesgo según el '
                             'modelo. Con ${lista.presupuesto} fichas de '
                             'intervención, ¿puedes bajar su riesgo estimado '
-                            'de ${porcentaje(lista.objetivo)}?',
+                            'de ${formatoProbabilidad(lista.objetivo)}?',
                             style: tema.textTheme.bodyMedium,
                           ),
                         ),
@@ -138,7 +138,7 @@ class _Riesgo extends StatelessWidget {
     final estado = ColoresEstado.of(context);
     return Semantics(
       container: true,
-      label: 'Riesgo estimado ${porcentaje(probabilidad)}',
+      label: 'Riesgo estimado ${formatoProbabilidad(probabilidad)}',
       excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -147,7 +147,7 @@ class _Riesgo extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
-          porcentaje(probabilidad),
+          formatoProbabilidad(probabilidad),
           style: TextStyle(
             color: estado.onRiesgoContenedor,
             fontWeight: FontWeight.w700,

@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
 import '../widgets/grafica_barras.dart';
+import '../formato.dart';
 
 /// Pestaña 2: estadísticas de los estudiantes en una gráfica de barras.
 class GraficasScreen extends ConsumerStatefulWidget {
@@ -193,13 +194,13 @@ class _Resumen extends StatelessWidget {
 
     final fichas = <(String, String, String)>[
       if (tipo.unidad == Unidad.conteo)
-        ('Total', '${total.round()}', 'estudiantes'),
+        ('Total', formatoEntero(total), 'estudiantes'),
       ('Más alto', tipo.formatear(mayor.valor), tipo.describir(mayor.etiqueta)),
       ('Más bajo', tipo.formatear(menor.valor), tipo.describir(menor.etiqueta)),
       (
         'Media',
         tipo.unidad == Unidad.conteo
-            ? media.toStringAsFixed(1)
+            ? formatoDecimal(media)
             : tipo.formatear(media),
         'por ${tipo.grupo}',
       ),

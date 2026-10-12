@@ -17,7 +17,7 @@ void main() {
 
     expect(find.text('Jorge Rodríguez'), findsOneWidget);
     expect(find.text('Esperanza Torres'), findsOneWidget);
-    expect(find.text('3.95'), findsOneWidget);
+    expect(find.text('3,95'), findsOneWidget);
     expect(find.text('En riesgo (1)'), findsOneWidget);
 
     await tester.tap(find.text('Esperanza Torres'));

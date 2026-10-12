@@ -46,8 +46,8 @@ void main() {
 
     test('formatea según la unidad', () {
       expect(TipoEstadistica.porCarrera.formatear(49), '49');
-      expect(TipoEstadistica.promedioPorCarrera.formatear(3.5), '3.50');
-      expect(TipoEstadistica.riesgoPorCarrera.formatear(33.33), '33.3%');
+      expect(TipoEstadistica.promedioPorCarrera.formatear(3.5), '3,50');
+      expect(TipoEstadistica.riesgoPorCarrera.formatear(33.33), '33,3\u00A0%');
     });
 
     test('describir añade el grupo a las etiquetas numéricas', () {

@@ -2,6 +2,7 @@
 // modelo ("según el modelo…"): son asociaciones en los datos, no causas.
 import 'apariencia.dart';
 import 'modelo.dart';
+import '../formato.dart';
 
 /// Nombre legible de una variable del modelo.
 String nombreVariable(String variable) => switch (variable) {
@@ -16,7 +17,7 @@ String nombreVariable(String variable) => switch (variable) {
 /// Valor con su unidad: "6 h", "58 %", "19 años", "2.º", "Medicina".
 String valorVariable(String variable, Object valor) => switch (variable) {
   'horas_estudio' => '$valor h',
-  'asistencia' => '$valor\u00A0%',
+  'asistencia' => formatoPorcentaje(valor as num),
   'edad' => '$valor años',
   'semestre' => '$valor.º',
   _ => '$valor',
@@ -26,9 +27,6 @@ String valorVariable(String variable, Object valor) => switch (variable) {
 /// semestre, carrera) influyen en la estimación pero no son "palancas".
 bool esAccionable(String variable) =>
     variable == 'horas_estudio' || variable == 'asistencia';
-
-/// "49 %" con espacio no separable: el "%" nunca queda solo en otra línea.
-String porcentaje(double p) => '${(p * 100).round()}\u00A0%';
 
 /// "la asistencia", "las horas de estudio"... y si va en plural.
 ({String texto, bool plural}) conArticulo(String variable) =>
@@ -40,9 +38,6 @@ String porcentaje(double p) => '${(p * 100).round()}\u00A0%';
       'carrera' => (texto: 'la carrera', plural: false),
       _ => (texto: variable, plural: false),
     };
-
-/// Número con coma decimal: 2.4 → "2,4".
-String decimal(double x) => x.toStringAsFixed(1).replaceAll('.', ',');
 
 /// "Según el modelo, la asistencia pesó 2,4 veces más que las horas de
 /// estudio." Compara las dos variables con más peso.
@@ -57,7 +52,7 @@ String? comparacionPesos(Explicacion e) {
     return 'Según el modelo, ${a.texto} y $b pesaron casi lo mismo.';
   }
   final peso = a.plural ? 'pesaron' : 'pesó';
-  return 'Según el modelo, ${a.texto} $peso ${decimal(veces)} veces más '
+  return 'Según el modelo, ${a.texto} $peso ${formatoDecimal(veces)} veces más '
       'que $b.';
 }
 
@@ -74,7 +69,7 @@ String? comparacionPesos(Explicacion e) {
     return (
       animo: AnimoBuho.atento,
       frase: palanca == null
-          ? 'Según el modelo, su riesgo es de ${porcentaje(caso.probabilidad)}. '
+          ? 'Según el modelo, su riesgo es de ${formatoProbabilidad(caso.probabilidad)}. '
                 'Tienes ${caso.presupuesto} fichas.'
           : 'Según el modelo, lo que más empuja su riesgo es la '
                 '${nombreVariable(palanca.variable).toLowerCase()} '
@@ -86,15 +81,15 @@ String? comparacionPesos(Explicacion e) {
     return (
       animo: AnimoBuho.contento,
       frase:
-          'Según el modelo bajaría a ${porcentaje(probabilidad)}. '
+          'Según el modelo bajaría a ${formatoProbabilidad(probabilidad)}. '
           'Puedes confirmar el rescate… o buscar una forma más barata.',
     );
   }
   return (
     animo: AnimoBuho.pensando,
     frase:
-        'Según el modelo, ahora estaría en ${porcentaje(probabilidad)}. '
-        'Aún por encima de ${porcentaje(caso.objetivo)}.',
+        'Según el modelo, ahora estaría en ${formatoProbabilidad(probabilidad)}. '
+        'Aún por encima de ${formatoProbabilidad(caso.objetivo)}.',
   );
 }
 
@@ -108,7 +103,7 @@ String? comparacionPesos(Explicacion e) {
     return (
       animo: AnimoBuho.preocupado,
       frase:
-          'Según el modelo seguiría en riesgo (${porcentaje(r.probabilidadFinal)}). '
+          'Según el modelo seguiría en riesgo (${formatoProbabilidad(r.probabilidadFinal)}). '
           'Prueba otra combinación.$cautela',
     );
   }

@@ -238,3 +238,20 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   del búho (`/tutorial`, redirect del router la primera vez). Sonidos CC0
   de Kenney con `audioplayers` (en Linux necesita GStreamer). Test de
   contraste WCAG de los dos temas.
+- **Fase 7.1, duelo contra la máquina** (`lib/duelo/`, contrato
+  `api-tienda/docs/CONTRATO_DUELO.md` v1): ruta `/casos/duelo` (rama Casos,
+  declarada antes de `/casos/:codigo`), con entrada «¿Un duelo?» arriba en
+  Casos y en el Perfil. `DueloApi.abrir` retoma el duelo `en_juego` contra la
+  máquina o crea uno; `jugar` repite la misma jugada ante red/5xx (idempotente
+  en el servidor) y, si persiste o hay 409 de estado, devuelve `GET
+  /duelos/{id}`: la pantalla decide si la jugada entró viendo si apareció la
+  ronda. El cliente no calcula ganador ni XP. La animación protagonista es el
+  giro de la carta rival (350 ms, saltable, quieta con "reducir
+  movimiento"). Huecos de la v2 sin funcionalidad: alias del rival,
+  `CuentaAtras` (estática), aviso de desconexión y `EsperandoRival` (no
+  pulsable). El modelo ya lee `motivo`, `rival_en_linea` y `estado:
+  esperando`.
+- **Formato de números**: `lib/formato.dart` es la única forma de mostrar un
+  número (coma decimal y punto de miles de Colombia, `%` tras espacio no
+  separable). Sustituye a los `toStringAsFixed` repartidos por Campus,
+  Datos, Laboratorio, gráficas y pastillas.

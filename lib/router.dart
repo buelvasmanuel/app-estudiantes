@@ -12,6 +12,7 @@ import 'screens/campus_screen.dart';
 import 'screens/caso_juego_screen.dart';
 import 'screens/casos_screen.dart';
 import 'screens/docente_screen.dart';
+import 'screens/duelo_screen.dart';
 import 'screens/estudiantes_screen.dart';
 import 'screens/graficas_screen.dart';
 import 'screens/laboratorio_screen.dart';
@@ -44,6 +45,9 @@ abstract final class Rutas {
 
   /// El tutorial del búho (la primera vez, tras entrar).
   static const tutorial = '/tutorial';
+
+  /// El duelo de cartas (dentro de la pestaña Casos).
+  static const duelo = '$casos/duelo';
 
   static String estudiante(int id) => '$estudiantes/$id';
   static String rescate(int estudianteId) => '$laboratorio/$estudianteId';
@@ -181,6 +185,11 @@ GoRouter crearRouter({
                 path: Rutas.casos,
                 builder: (_, _) => const CasosScreen(),
                 routes: [
+                  // Antes que ':codigo', que también casaría con "duelo".
+                  GoRoute(
+                    path: 'duelo',
+                    builder: (_, _) => const DueloScreen(),
+                  ),
                   GoRoute(
                     path: ':codigo',
                     builder: (_, state) => CasoJuegoScreen(

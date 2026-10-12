@@ -58,6 +58,8 @@ class _Lista extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const TarjetaDuelo(),
+                const SizedBox(height: 16),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -141,5 +143,52 @@ class _Lista extends ConsumerWidget {
           onTap: () => context.go(Rutas.casoJuego(c.codigo)),
         ),
     ];
+  }
+}
+
+/// "¿Un duelo?": la entrada al duelo de cartas (arriba en Casos y en el
+/// Perfil).
+class TarjetaDuelo extends StatelessWidget {
+  const TarjetaDuelo({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    return Card.outlined(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        key: const Key('tarjeta-duelo'),
+        onTap: () => context.go(Rutas.duelo),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.style_outlined,
+                size: 36,
+                color: tema.colorScheme.primary,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('¿Un duelo?', style: tema.textTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Tus cartas son estudiantes reales. Elige el atributo '
+                      'con el que crees ganarle al Búho Máquina.',
+                      style: tema.textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

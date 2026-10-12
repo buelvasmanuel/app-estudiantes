@@ -8,6 +8,7 @@ import '../models/sesion.dart';
 import '../preferencias.dart';
 import '../providers.dart';
 import '../router.dart';
+import 'casos_screen.dart';
 import '../tema/temas.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
@@ -58,6 +59,8 @@ class _Detective extends ConsumerWidget {
                   _Cabecera(progreso: p),
                   const SizedBox(height: 16),
                   _Cifras(progreso: p),
+                  const SizedBox(height: 16),
+                  const TarjetaDuelo(),
                   const SizedBox(height: 24),
                   _Insignias(insignias: p.insignias),
                   const SizedBox(height: 24),

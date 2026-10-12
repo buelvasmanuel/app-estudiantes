@@ -29,9 +29,9 @@ class JuegoFalso {
   final aliasesExistentes = {'ana_01'};
 
   ApiService api() =>
-      ApiService(baseUrl: 'http://api.test', client: MockClient(_atender));
+      ApiService(baseUrl: 'http://api.test', client: MockClient(atender));
 
-  Future<http.Response> _atender(http.Request p) async {
+  Future<http.Response> atender(http.Request p) async {
     final ruta = p.url.path;
     registro.add(
       '${p.method} ${p.url.path}${p.url.hasQuery ? '?${p.url.query}' : ''}',

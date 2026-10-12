@@ -1217,10 +1217,16 @@ class _Resultado extends StatelessWidget {
         : porTiempo && ultima.elegidoPor == Lado.yo
         ? 'Se te acabó el tiempo en 2 turnos seguidos.'
         : 'Abandonaste el duelo.';
+    // Ganar por abandono con menos de 3 rondas resueltas no da XP nunca: es
+    // la razón aunque además se haya llegado al límite del día (§7.4).
+    final sinXpPorPocasRondas =
+        ganePorAbandono && d.xpGanada == 0 && d.rondas.length < 3;
     final xp = d.xpGanada > 0
         ? '+${d.xpGanada} XP'
         : perdiPorAbandono
         ? 'Abandonar no da XP.'
+        : sinXpPorPocasRondas
+        ? 'Esta victoria no da XP.'
         : d.duelosConXpHoy >= d.maximoDuelosConXp
         ? 'Hoy ya jugaste ${d.maximoDuelosConXp} duelos con XP: este no '
               'suma, pero sí cuenta como práctica.'
@@ -1229,7 +1235,7 @@ class _Resultado extends StatelessWidget {
         ? d.xpGanada > 0
               ? 'Ganas por abandono. Como ya se habían resuelto al menos 3 '
                     'rondas, la victoria cuenta con XP.'
-              : d.rondas.length < 3
+              : sinXpPorPocasRondas
               ? 'Ganas por abandono, pero se resolvieron menos de 3 rondas: '
                     'así, esta victoria no da XP.'
               : 'Ganas por abandono. Hoy ya jugaste '

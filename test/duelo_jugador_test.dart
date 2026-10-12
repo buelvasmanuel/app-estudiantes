@@ -458,6 +458,7 @@ void main() {
       WidgetTester tester, {
       required int rondas,
       required int xp,
+      int jugadosHoy = 1,
     }) async {
       final hechas = [for (var i = 1; i <= rondas; i++) rondaJson(i)];
       final s = DueloJugadorFalso(
@@ -477,6 +478,7 @@ void main() {
         yo: rondas,
         rondas: hechas,
         xp: xp,
+        jugadosHoy: jugadosHoy,
       );
       await _aviso(tester, ws, s, 'terminado');
     }
@@ -500,13 +502,31 @@ void main() {
     testWidgets('con menos de 3 rondas: victoria sin XP, y lo explica', (
       tester,
     ) async {
-      await terminar(tester, rondas: 1, xp: 0);
+      // Aunque además ya lleve 3 duelos con XP hoy: la razón es una sola.
+      await terminar(tester, rondas: 1, xp: 0, jugadosHoy: 3);
       expect(_texto(tester, 'resultado-duelo'), '¡Victoria!');
-      expect(_texto(tester, 'xp-duelo'), 'Este duelo no dio XP.');
+      expect(_texto(tester, 'xp-duelo'), 'Esta victoria no da XP.');
       expect(
         find.text(
           'Ganas por abandono, pero se resolvieron menos de 3 rondas: así, '
           'esta victoria no da XP.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('con 3 rondas pero sin huecos hoy: lo dice el límite', (
+      tester,
+    ) async {
+      await terminar(tester, rondas: 3, xp: 0, jugadosHoy: 3);
+      expect(
+        _texto(tester, 'xp-duelo'),
+        'Hoy ya jugaste 3 duelos con XP: este no suma, pero sí cuenta como '
+        'práctica.',
+      );
+      expect(
+        find.text(
+          'Ganas por abandono. Hoy ya jugaste 3 duelos con XP en este modo.',
         ),
         findsOneWidget,
       );

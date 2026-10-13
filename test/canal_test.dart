@@ -148,6 +148,32 @@ void main() {
     });
   }
 
+  testWidgets(
+    'mensaje "error" 4429 (demasiadas conexiones, contrato 2.3): reconecta '
+    'con espera creciente, nunca en bucle',
+    (tester) async {
+      final c = canal()..abrir();
+      await tester.pump();
+      for (final espera in [1, 2, 4]) {
+        ws.ultima.recibir({
+          'tipo': 'error',
+          'codigo': 4429,
+          'motivo': 'demasiadas_conexiones',
+        });
+        await tester.pump();
+        final antes = ws.conexiones.length;
+        expect(c.proximaEspera, Duration(seconds: espera));
+        await tester.pump(
+          Duration(seconds: espera) - const Duration(milliseconds: 1),
+        );
+        expect(ws.conexiones, hasLength(antes)); // aún no
+        await tester.pump(const Duration(milliseconds: 1));
+        expect(ws.conexiones, hasLength(antes + 1));
+      }
+      await c.cerrar();
+    },
+  );
+
   testWidgets('cierre con 4404 sin mensaje previo: tampoco reconecta', (
     tester,
   ) async {

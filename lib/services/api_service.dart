@@ -57,6 +57,7 @@ class PeticionApi {
     Map<String, String>? cabeceras,
     this.conInterceptores = true,
     this.limite,
+    this.conCredenciales = false,
   }) : cabeceras = {...?cabeceras};
 
   /// `GET`, `POST`, `PUT`, `PATCH` o `DELETE`.
@@ -78,6 +79,10 @@ class PeticionApi {
   /// Tiempo máximo de espera propio. `null` = el normal (8 s, o 60 s si el
   /// servidor puede estar dormido).
   final Duration? limite;
+
+  /// En la web, enviar las cookies (`withCredentials`): el refresh en cookie
+  /// (CONTRATO_AUTH §6.3). Fuera de la web no cambia nada.
+  final bool conCredenciales;
 
   /// 1 la primera vez, 2 si se está repitiendo. Lo actualiza [ApiService].
   int intento = 1;
@@ -111,6 +116,7 @@ abstract class InterceptorApi {
 class ApiService {
   ApiService({
     http.Client? client,
+    this._clienteConCredenciales,
     String? baseUrl,
     List<InterceptorApi>? interceptores,
   }) : _client = client ?? http.Client(),
@@ -118,6 +124,10 @@ class ApiService {
        interceptores = [...?interceptores];
 
   final http.Client _client;
+
+  /// Para las peticiones [PeticionApi.conCredenciales] (solo web; si es
+  /// `null`, se usa el normal).
+  final http.Client? _clienteConCredenciales;
   final String baseUrl;
 
   /// Se pueden añadir después de crear el servicio (el de la sesión necesita
@@ -220,6 +230,7 @@ class ApiService {
   void cerrar() {
     despertando.dispose();
     _client.close();
+    _clienteConCredenciales?.close();
   }
 
   // --- Detalles internos ----------------------------------------------------
@@ -312,7 +323,10 @@ class ApiService {
       request.headers['Content-Type'] = 'application/json';
       request.body = jsonEncode(peticion.cuerpo);
     }
-    return http.Response.fromStream(await _client.send(request));
+    final cliente = peticion.conCredenciales
+        ? _clienteConCredenciales ?? _client
+        : _client;
+    return http.Response.fromStream(await cliente.send(request));
   }
 
   /// FastAPI envía los errores como `{"detail": ...}`, y `detail` puede ser:

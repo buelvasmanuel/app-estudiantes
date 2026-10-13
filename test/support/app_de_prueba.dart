@@ -32,6 +32,7 @@ Tokens tokensDePrueba({Rol rol = Rol.jugador}) => Tokens(
 /// [reproductor]: por defecto, uno que no suena.
 /// [conectorWs]: por defecto, el WebSocket nunca conecta (solo REST).
 /// [esWeb] y [navegador]: passkeys (por defecto, como en el APK: nada).
+/// [modoCookie]: refresh en cookie de la web (por defecto, como el APK).
 Widget appDePrueba(
   ApiService api, {
   String inicial = Rutas.estudiantes,
@@ -44,6 +45,7 @@ Widget appDePrueba(
   ConectorWs? conectorWs,
   bool esWeb = false,
   NavegadorPasskeys? navegador,
+  bool modoCookie = false,
 }) => ProviderScope(
   retry: sinReintentos,
   overrides: [
@@ -58,6 +60,8 @@ Widget appDePrueba(
     conectorWsProvider.overrideWithValue(conectorWs ?? sinWebSocket),
     // Passkeys: por defecto, como el APK (no web, sin soporte).
     esWebProvider.overrideWithValue(esWeb),
+    // Refresh en cookie: por defecto, como el APK (desactivado).
+    modoCookieProvider.overrideWithValue(modoCookie),
     if (navegador != null)
       navegadorPasskeysProvider.overrideWithValue(navegador),
     apiServiceProvider.overrideWithValue(api),

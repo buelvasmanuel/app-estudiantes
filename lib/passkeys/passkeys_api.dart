@@ -38,8 +38,11 @@ class PasskeysApi {
 
   /// Entrar sin sesión: el navegador ofrece las passkeys de este dominio y
   /// devuelve el `TokensOut` (lo aplica la sesión). Endpoints públicos: sin
-  /// interceptor.
-  Future<Object?> entrar() async {
+  /// interceptor. [preparar] añade lo del modo cookie a la verificación
+  /// (CONTRATO_PASSKEYS v1.1, CONTRATO_AUTH §6.3).
+  Future<Object?> entrar({
+    PeticionApi Function(PeticionApi peticion)? preparar,
+  }) async {
     final o = _api.parsear(
       await _api.enviar(
         PeticionApi(
@@ -51,14 +54,13 @@ class PasskeysApi {
       opcionesPasskey,
     );
     final credencial = await _navegador.obtener(o.opciones);
-    return _api.enviar(
-      PeticionApi(
-        'POST',
-        '/passkeys/login/verificacion',
-        cuerpo: {'reto_id': o.retoId, 'credencial': credencial},
-        conInterceptores: false,
-      ),
+    final verificacion = PeticionApi(
+      'POST',
+      '/passkeys/login/verificacion',
+      cuerpo: {'reto_id': o.retoId, 'credencial': credencial},
+      conInterceptores: false,
     );
+    return _api.enviar(preparar?.call(verificacion) ?? verificacion);
   }
 }
 

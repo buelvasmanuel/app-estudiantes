@@ -32,6 +32,7 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
     required this._almacen,
     DateTime Function()? ahora,
     Tokens? tokens,
+    this.modoCookie = false,
   }) : _ahora = ahora ?? DateTime.now,
        _tokens = tokens,
        _estado = tokens == null
@@ -51,6 +52,44 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
   /// Cambia cada vez que la sesión se cierra. Una renovación que empezó antes
   /// de cerrar no debe volver a abrirla al terminar.
   int _generacion = 0;
+
+  /// Web: el refresh vive en una cookie HttpOnly de la API (CONTRATO_AUTH
+  /// §6.3). Las peticiones de sesión llevan `X-Refresh-En-Cookie: 1` y
+  /// credenciales; `/auth/refresh` y `/auth/logout` van con `{}`. En el APK y
+  /// el escritorio es `false` y nada cambia.
+  final bool modoCookie;
+
+  /// Al arrancar en modo cookie: un `401 refresh_invalido` solo significa
+  /// que no había sesión (no se avisa de nada).
+  bool _arrancando = false;
+
+  /// La petición [p], preparada para el modo cookie si toca.
+  PeticionApi _deSesion(
+    String metodo,
+    String ruta, {
+    Object? cuerpo,
+    bool conInterceptores = false,
+  }) => PeticionApi(
+    metodo,
+    ruta,
+    cuerpo: cuerpo,
+    conInterceptores: conInterceptores,
+    limite: limiteAuth,
+    conCredenciales: modoCookie,
+    cabeceras: {if (modoCookie) 'X-Refresh-En-Cookie': '1'},
+  );
+
+  /// Las cabeceras y credenciales del modo cookie, para peticiones de sesión
+  /// que se arman fuera (el login con passkey).
+  PeticionApi prepararParaSesion(PeticionApi p) => PeticionApi(
+    p.metodo,
+    p.ruta,
+    cuerpo: p.cuerpo,
+    cabeceras: {...p.cabeceras, if (modoCookie) 'X-Refresh-En-Cookie': '1'},
+    conInterceptores: p.conInterceptores,
+    limite: p.limite,
+    conCredenciales: modoCookie,
+  );
 
   /// Si al access le queda menos que esto, se renueva antes de enviar.
   static const margen = Duration(seconds: 60);
@@ -92,11 +131,16 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
   /// Recupera la sesión guardada (móvil y escritorio) al arrancar.
   Future<void> restaurar() async {
     _cambiar(EstadoSesion.restaurando, error: null);
-    final refresh = await _almacen.leer();
-    if (refresh == null) {
-      _cambiar(EstadoSesion.sinSesion);
-      return;
+    // En la web con cookie no se sabe si hay sesión hasta preguntar: el
+    // refresh no se ve desde la app.
+    if (!modoCookie) {
+      final refresh = await _almacen.leer();
+      if (refresh == null) {
+        _cambiar(EstadoSesion.sinSesion);
+        return;
+      }
     }
+    _arrancando = true;
     try {
       await _renovar();
     } on ApiException catch (e) {
@@ -105,6 +149,8 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
       if (_estado == EstadoSesion.restaurando) {
         _cambiar(EstadoSesion.restaurando, error: e);
       }
+    } finally {
+      _arrancando = false;
     }
   }
 
@@ -127,16 +173,12 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
   Future<void> cerrarSesion() async {
     final refresh = _tokens?.refresh ?? await _almacen.leer();
     await _cerrarLocal();
-    if (refresh == null) return;
+    // En modo cookie se envía `{}`: la API cierra la sesión de la cookie y la
+    // borra (la app no puede).
+    if (refresh == null && !modoCookie) return;
     try {
       await _api.enviar(
-        PeticionApi(
-          'POST',
-          '/auth/logout',
-          cuerpo: {'refresh_token': refresh},
-          conInterceptores: false,
-          limite: limiteAuth,
-        ),
+        _deSesion('POST', '/auth/logout', cuerpo: {'refresh_token': ?refresh}),
       );
     } on ApiException {
       // Sin red o servidor caído: la sesión caducará sola en el servidor.
@@ -147,7 +189,7 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
   /// conserva para poder reintentarlo (las demás seguirían abiertas).
   Future<void> cerrarTodas() async {
     await _api.enviar(
-      PeticionApi('POST', '/auth/logout-todo', limite: limiteAuth),
+      _deSesion('POST', '/auth/logout-todo', conInterceptores: true),
     );
     await _cerrarLocal(aviso: avisoTodas);
   }
@@ -217,7 +259,7 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
   Future<void> _hacerRenovacion() async {
     final generacion = _generacion;
     final refresh = _tokens?.refresh ?? await _almacen.leer();
-    if (refresh == null) {
+    if (refresh == null && !modoCookie) {
       await _cerrarLocal();
       throw const ApiException(
         'Inicia sesión para continuar.',
@@ -236,12 +278,11 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
       final enviado = _ahora();
       try {
         final json = await _api.enviar(
-          PeticionApi(
+          _deSesion(
             'POST',
             '/auth/refresh',
-            cuerpo: {'refresh_token': refresh},
-            conInterceptores: false,
-            limite: limiteAuth,
+            // Modo cookie: `{}` (la API lee la cookie).
+            cuerpo: {'refresh_token': ?refresh},
           ),
         );
         if (generacion != _generacion) {
@@ -261,12 +302,16 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
           rethrow; // sin respuesta: se conservan los tokens
         }
         final aviso = switch ((e.statusCode, e.codigo)) {
+          // Al abrir la web: no había sesión (ni cookie). No es un error.
+          (401, 'refresh_invalido') when _arrancando && modoCookie => '',
           (401, 'sesion_revocada') => avisoRevocada,
           (401, _) => avisoCaducada,
           (403, 'cuenta_desactivada') => e.mensaje,
           _ => null, // 429, 5xx: no se cierra la sesión
         };
-        if (aviso != null) await _cerrarLocal(aviso: aviso);
+        if (aviso != null) {
+          await _cerrarLocal(aviso: aviso.isEmpty ? null : aviso);
+        }
         rethrow;
       }
     }
@@ -274,15 +319,7 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
 
   Future<void> _entrar(String ruta, Map<String, Object?> cuerpo) async {
     final enviado = _ahora();
-    final json = await _api.enviar(
-      PeticionApi(
-        'POST',
-        ruta,
-        cuerpo: cuerpo,
-        conInterceptores: false,
-        limite: limiteAuth,
-      ),
-    );
+    final json = await _api.enviar(_deSesion('POST', ruta, cuerpo: cuerpo));
     await _aplicar(json, enviado);
   }
 
@@ -293,7 +330,11 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
       json,
       (j) => Tokens.fromJson(j, recibido: enviado),
     );
-    await _almacen.guardar(tokens.refresh); // primero el refresh (§6)
+    // Primero el refresh (§6). En modo cookie no hay nada que guardar: va en
+    // la cookie HttpOnly (y no debe guardarse en ningún sitio, §6.3).
+    if (tokens.refresh case final refresh? when !modoCookie) {
+      await _almacen.guardar(refresh);
+    }
     _tokens = tokens;
     _aviso = null;
     _cambiar(EstadoSesion.conSesion);

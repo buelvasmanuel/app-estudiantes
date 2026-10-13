@@ -130,7 +130,10 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
     });
     final sesion = ref.read(sesionProvider);
     try {
-      await sesion.entrarConPasskey(ref.read(passkeysApiProvider).entrar);
+      final passkeys = ref.read(passkeysApiProvider);
+      await sesion.entrarConPasskey(
+        () => passkeys.entrar(preparar: sesion.prepararParaSesion),
+      );
     } on PasskeyCancelada {
       if (mounted) {
         setState(

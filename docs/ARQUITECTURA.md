@@ -281,3 +281,14 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   passkey usa `GestorSesion.entrarConPasskey`, que aplica el `TokensOut` por
   el mismo camino que la contraseña. `esWebProvider` y
   `navegadorPasskeysProvider` se sustituyen en los tests.
+- **Fase 7.5, refresh en cookie en la web** (CONTRATO_AUTH v1.3 §6.3):
+  `modoCookieProvider` (= `kIsWeb`) activa en `GestorSesion` la cabecera
+  `X-Refresh-En-Cookie: 1` y las credenciales en login, registro, refresh,
+  logout, logout-todo y la verificación del login con passkey
+  (`prepararParaSesion`). Las credenciales van por un segundo `http.Client`
+  de `ApiService` (`BrowserClient` con `withCredentials`, por import
+  condicional; `null` fuera de la web). `Tokens.refresh` puede ser `null` y
+  en modo cookie no se guarda en ningún sitio. Al arrancar en la web se
+  pregunta siempre con `{}`: el `401 refresh_invalido` del arranque cierra
+  sin aviso. El APK y el escritorio no cambian (tests en
+  `sesion_cookie_test.dart`).

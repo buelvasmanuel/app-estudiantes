@@ -111,6 +111,14 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
   Future<void> iniciarSesion(String alias, String password) =>
       _entrar('/auth/login', {'alias': alias, 'password': password});
 
+  /// Entrar con una passkey (CONTRATO_PASSKEYS §3): [tokens] hace el baile
+  /// con el navegador y devuelve el `TokensOut`, que se guarda y renueva
+  /// igual que el del login con contraseña.
+  Future<void> entrarConPasskey(Future<Object?> Function() tokens) async {
+    final enviado = _ahora();
+    await _aplicar(await tokens(), enviado);
+  }
+
   Future<void> registrarse(String alias, String password) =>
       _entrar('/auth/registro', {'alias': alias, 'password': password});
 

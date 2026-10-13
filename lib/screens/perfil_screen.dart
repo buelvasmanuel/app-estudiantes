@@ -9,6 +9,7 @@ import '../preferencias.dart';
 import '../providers.dart';
 import '../router.dart';
 import 'casos_screen.dart';
+import 'mis_passkeys.dart';
 import '../tema/temas.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
@@ -66,6 +67,8 @@ class _Detective extends ConsumerWidget {
                   _Insignias(insignias: p.insignias),
                   const SizedBox(height: 24),
                   const AjustesJuego(),
+                  // Solo en la web (dentro decide si mostrarse).
+                  const MisPasskeys(),
                   if (_esDocente(ref)) ...[
                     const SizedBox(height: 24),
                     OutlinedButton.icon(

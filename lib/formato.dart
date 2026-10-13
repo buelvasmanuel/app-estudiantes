@@ -37,3 +37,10 @@ String _miles(String entera) {
   }
   return grupos.join('.');
 }
+
+/// Fecha como en Colombia: 13/10/2026 (día/mes/año, hora local).
+String formatoFecha(DateTime fecha) {
+  final f = fecha.toLocal();
+  String dos(int n) => n.toString().padLeft(2, '0');
+  return '${dos(f.day)}/${dos(f.month)}/${f.year}';
+}

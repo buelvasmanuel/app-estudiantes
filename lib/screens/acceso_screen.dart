@@ -5,7 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../passkeys/navegador.dart';
+import '../passkeys/passkeys_api.dart';
 import '../providers.dart';
+import 'mis_passkeys.dart';
 import '../router.dart';
 import '../services/api_service.dart';
 import '../tema/temas.dart';
@@ -66,6 +69,9 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
   bool _enviando = false;
   ApiException? _error;
 
+  /// Aviso que no es un error (p. ej., se canceló la passkey).
+  String? _info;
+
   /// Tras un 429: hasta cuándo esperar (se muestra una cuenta atrás).
   DateTime? _bloqueadoHasta;
   Timer? _cuentaAtras;
@@ -94,6 +100,7 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
     setState(() {
       _enviando = true;
       _error = null;
+      _info = null;
     });
     final sesion = ref.read(sesionProvider);
     try {
@@ -108,6 +115,57 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
       setState(() => _error = e);
       final espera = e.reintentarEn;
       if (e.statusCode == 429 && espera != null) _bloquear(espera);
+    } finally {
+      if (mounted) setState(() => _enviando = false);
+    }
+  }
+
+  /// Entrar con passkey (solo web): el navegador ofrece las de este dominio.
+  Future<void> _entrarConPasskey() async {
+    if (_enviando) return;
+    setState(() {
+      _enviando = true;
+      _error = null;
+      _info = null;
+    });
+    final sesion = ref.read(sesionProvider);
+    try {
+      await sesion.entrarConPasskey(ref.read(passkeysApiProvider).entrar);
+    } on PasskeyCancelada {
+      if (mounted) {
+        setState(
+          () => _info =
+              'No se usó ninguna passkey. Puedes intentarlo de nuevo o '
+              'entrar con tu contraseña.',
+        );
+      }
+    } on PasskeyNoSoportada {
+      if (mounted) {
+        setState(() => _info = MisPasskeysTextos.sinSoporte);
+      }
+    } on PasskeyFallo catch (e) {
+      if (mounted) {
+        setState(
+          () => _error = ApiException(
+            'El navegador no pudo usar la passkey (${e.nombre}). Entra con '
+            'tu contraseña.',
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(
+        () => _error = switch (e.codigo) {
+          'passkey_invalida' => const ApiException(
+            'Esa passkey ya no sirve para entrar (quizá la borraste). Entra '
+            'con tu contraseña.',
+          ),
+          'reto_invalido' => const ApiException(
+            'La solicitud caducó. Inténtalo de nuevo.',
+          ),
+          _ => e,
+        },
+      );
     } finally {
       if (mounted) setState(() => _enviando = false);
     }
@@ -273,6 +331,14 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
                                 : 'Las contraseñas no coinciden',
                           ),
                         ],
+                        if (_info case final info?) ...[
+                          const SizedBox(height: 16),
+                          _Mensaje(
+                            key: const Key('aviso-passkey'),
+                            texto: info,
+                            icono: Icons.info_outline,
+                          ),
+                        ],
                         if (_error case final error?) ...[
                           const SizedBox(height: 16),
                           _Mensaje(
@@ -300,6 +366,20 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
                             ),
                           ),
                         ),
+                        // Solo en la web y con un navegador que las admite.
+                        if (!_esRegistro &&
+                            ref.watch(passkeysDisponiblesProvider)) ...[
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            key: const Key('entrar-passkey'),
+                            onPressed: _enviando ? null : _entrarConPasskey,
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(52),
+                            ),
+                            icon: const Icon(Icons.fingerprint),
+                            label: const Text('Entrar con passkey'),
+                          ),
+                        ],
                         const SizedBox(height: 8),
                         TextButton(
                           onPressed: _enviando ? null : _cambiarModo,
@@ -325,6 +405,7 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
 /// Recuadro con un aviso (información o error).
 class _Mensaje extends StatelessWidget {
   const _Mensaje({
+    super.key,
     required this.texto,
     required this.icono,
     this.esError = false,

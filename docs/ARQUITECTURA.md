@@ -271,3 +271,13 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   conectan. Prueba real con dos cuentas (`duelo_jugador_real_test.dart`).
 - **XP con punto de miles** en chip, perfil, ranking, docente y celebración
   (`formatoEntero`).
+- **Fase 7.4, passkeys en la web** (CONTRATO_PASSKEYS v1): `lib/passkeys/`.
+  `NavegadorPasskeys` con import condicional (`dart.library.js_interop`):
+  en la web, `navigator.credentials.create/get` con
+  `PublicKeyCredential.parse…FromJSON` y `toJSON()` (el JSON de la API pasa
+  tal cual); fuera de la web, sin soporte. Los `DOMException` se traducen:
+  `NotAllowedError`/`AbortError` → cancelada (aviso neutro),
+  `InvalidStateError` → ya hay una en este dispositivo. El login con
+  passkey usa `GestorSesion.entrarConPasskey`, que aplica el `TokensOut` por
+  el mismo camino que la contraseña. `esWebProvider` y
+  `navegadorPasskeysProvider` se sustituyen en los tests.

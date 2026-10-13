@@ -226,6 +226,12 @@ lib/
 │   ├── juego_api.dart         # Endpoints y providers (se rehacen al cambiar de cuenta)
 │   ├── celebracion.dart       # Subida de nivel / insignia nueva (≤ 1,2 s, saltable)
 │   └── lote.dart              # Revisión de la lista de alias del docente
+├── passkeys/                  # Passkeys en la web (CONTRATO_PASSKEYS.md)
+│   ├── navegador.dart         # Interfaz WebAuthn + errores (cancelada, ya existe…)
+│   ├── navegador_web.dart     # create/get por js_interop (solo web)
+│   ├── navegador_sin_soporte.dart # APK y escritorio: sin passkeys
+│   ├── modelo.dart            # Passkey y opciones con su reto
+│   └── passkeys_api.dart      # Endpoints y providers (esWeb, disponibles)
 ├── duelo/                     # Duelo de cartas (CONTRATO_DUELO.md)
 │   ├── modelo.dart            # Carta, Ronda, Duelo; formato de cada atributo
 │   ├── duelo_api.dart         # Endpoints; abrir (retomar o crear), buscar rival, jugar con reintentos
@@ -260,6 +266,7 @@ lib/
 │   ├── elegir_rival_screen.dart # Búho Máquina u otro detective (XP de hoy de cada modo)
 │   ├── duelo_screen.dart      # El duelo: búsqueda, marcador, reloj, cartas, búho y resultado
 │   ├── perfil_screen.dart     # Detective (nivel, insignias) y ranking
+│   ├── mis_passkeys.dart      # «Mis passkeys» del perfil (solo web)
 │   ├── docente_screen.dart    # Alta de cuentas en lote y lista de jugadores
 │   ├── laboratorio_screen.dart # Lista de casos del Laboratorio
 │   ├── rescate_screen.dart    # Jugar un caso y ver el resultado
@@ -615,6 +622,45 @@ flutter test integration_test/duelo_real_test.dart -d linux \
   --dart-define=ALIAS=… --dart-define=PASSWORD=… \
   --dart-define=CAPTURAS_DIR=$PWD/docs/capturas
 ```
+
+## Passkeys (solo web)
+
+<p>
+  <img src="docs/capturas/passkeys/login_con_passkey.png" width="180" alt="Login con «Entrar con passkey»">
+  <img src="docs/capturas/passkeys/passkey_creada.png" width="180" alt="Mis passkeys en el perfil">
+  <img src="docs/capturas/passkeys/cancelar.png" width="180" alt="Aviso al cancelar">
+  <img src="docs/capturas/passkeys/perfil_sin_soporte.png" width="180" alt="Navegador sin passkeys">
+</p>
+
+Implementa `docs/CONTRATO_PASSKEYS.md` v1 (api-tienda): una forma
+**adicional** de entrar con la huella, la cara o el PIN del dispositivo. La
+contraseña sigue sirviendo (y es la forma de recuperar la cuenta).
+
+- **Solo en la web** y solo si el navegador las admite
+  (`window.PublicKeyCredential` con `parse…FromJSON`: Chrome/Edge 129+,
+  Firefox 119+, Safari 18.4+). En el APK y en el escritorio no aparece nada.
+- **Login:** botón «Entrar con passkey» (no hace falta escribir el alias: el
+  navegador ofrece las passkeys de este dominio). Devuelve los mismos tokens
+  que la contraseña, así que la sesión se guarda y se renueva igual.
+- **Perfil → Mis passkeys:** crearlas (con un nombre), verlas (creada, último
+  uso, si se sincroniza entre tus dispositivos) y borrarlas. Con un navegador
+  sin soporte, la sección explica por qué y qué navegadores usar.
+- **Cancelar no es un error:** «No se creó la passkey. Puedes intentarlo de
+  nuevo cuando quieras.» Una passkey borrada o de otra cuenta: «Esa passkey
+  ya no sirve para entrar…».
+- Por interoperabilidad con JavaScript (`dart:js_interop` y `package:web`),
+  sin librerías: `lib/passkeys/navegador_web.dart` (en el APK y el escritorio
+  se usa `navegador_sin_soporte.dart` por import condicional).
+- Las passkeys van ligadas al dominio `buelvasmanuel.github.io`: en local
+  (`localhost`) solo funcionan contra una API arrancada con
+  `PASSKEYS_RP_ID=localhost`.
+
+Las pruebas de widgets simulan el navegador y la API
+(`test/passkeys_test.dart`). La prueba real se hizo en Brave con un
+autenticador virtual (CDP WebAuthn) contra la API de producción, primero
+sirviendo la web local bajo la dirección de GitHub Pages y después en la web
+publicada: crear, cancelar, entrar, borrar, entrar con una passkey borrada y
+navegador sin soporte.
 
 ## Temas: Noche y Expediente
 

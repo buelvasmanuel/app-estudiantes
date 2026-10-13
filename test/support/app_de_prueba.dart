@@ -1,6 +1,8 @@
 import 'package:app_estudiantes/duelo/canal.dart';
 import 'package:app_estudiantes/duelo/duelo_api.dart';
 import 'package:app_estudiantes/main.dart';
+import 'package:app_estudiantes/passkeys/navegador.dart';
+import 'package:app_estudiantes/passkeys/passkeys_api.dart';
 import 'package:app_estudiantes/models/sesion.dart';
 import 'package:app_estudiantes/preferencias.dart';
 import 'package:app_estudiantes/providers.dart';
@@ -29,6 +31,7 @@ Tokens tokensDePrueba({Rol rol = Rol.jugador}) => Tokens(
 /// [preferencias]: por defecto, tutorial ya visto y tema [tema] (Expediente).
 /// [reproductor]: por defecto, uno que no suena.
 /// [conectorWs]: por defecto, el WebSocket nunca conecta (solo REST).
+/// [esWeb] y [navegador]: passkeys (por defecto, como en el APK: nada).
 Widget appDePrueba(
   ApiService api, {
   String inicial = Rutas.estudiantes,
@@ -39,6 +42,8 @@ Widget appDePrueba(
   Preferencias? preferencias,
   Reproductor? reproductor,
   ConectorWs? conectorWs,
+  bool esWeb = false,
+  NavegadorPasskeys? navegador,
 }) => ProviderScope(
   retry: sinReintentos,
   overrides: [
@@ -51,6 +56,10 @@ Widget appDePrueba(
     ),
     reproductorProvider.overrideWithValue(reproductor ?? ReproductorMudo()),
     conectorWsProvider.overrideWithValue(conectorWs ?? sinWebSocket),
+    // Passkeys: por defecto, como el APK (no web, sin soporte).
+    esWebProvider.overrideWithValue(esWeb),
+    if (navegador != null)
+      navegadorPasskeysProvider.overrideWithValue(navegador),
     apiServiceProvider.overrideWithValue(api),
     almacenRefreshProvider.overrideWithValue(almacen ?? AlmacenEnMemoria()),
     if (conSesion)

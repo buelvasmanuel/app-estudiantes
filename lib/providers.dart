@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'models/estadistica.dart';
@@ -6,12 +7,13 @@ import 'models/prediccion.dart';
 import 'models/sesion.dart';
 import 'services/almacen_refresh.dart';
 import 'services/api_service.dart';
+import 'services/cliente_credenciales.dart';
 import 'services/sesion.dart';
 
 /// El único [ApiService] de la app. Los tests lo sustituyen con
 /// `apiServiceProvider.overrideWithValue(apiFalsa(...))`.
 final apiServiceProvider = Provider<ApiService>((ref) {
-  final api = ApiService();
+  final api = ApiService(clienteConCredenciales: clienteConCredenciales());
   ref.onDispose(api.cerrar);
   return api;
 });
@@ -21,6 +23,10 @@ final apiServiceProvider = Provider<ApiService>((ref) {
 final almacenRefreshProvider = Provider<AlmacenRefresh>(
   (ref) => AlmacenRefresh.dePlataforma(),
 );
+
+/// Refresh en cookie (CONTRATO_AUTH §6.3): solo en la web. El APK y el
+/// escritorio siguen con el refresh en el almacén seguro.
+final modoCookieProvider = Provider<bool>((ref) => kIsWeb);
 
 /// La sesión del usuario. Se registra como interceptor del [ApiService] y, si
 /// no se le pasan [Tokens], intenta recuperar la sesión guardada.
@@ -33,6 +39,7 @@ GestorSesion crearSesion(Ref ref, {Tokens? tokens}) {
     api: api,
     almacen: ref.watch(almacenRefreshProvider),
     tokens: tokens,
+    modoCookie: ref.watch(modoCookieProvider),
   );
   api.interceptores.add(sesion);
   ref.onDispose(() {

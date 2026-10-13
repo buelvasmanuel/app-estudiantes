@@ -47,7 +47,10 @@ class Tokens {
 
   final String access;
   final DateTime accessCaduca;
-  final String refresh;
+
+  /// `null` en el modo cookie de la web (CONTRATO_AUTH §6.3): el refresh
+  /// queda en una cookie HttpOnly que la app no puede leer.
+  final String? refresh;
   final Usuario usuario;
 
   /// [recibido] es la hora local en que llegó la respuesta.
@@ -56,7 +59,9 @@ class Tokens {
     return Tokens(
       access: leerString(m, 'access_token'),
       accessCaduca: recibido.add(Duration(seconds: leerInt(m, 'expires_in'))),
-      refresh: leerString(m, 'refresh_token'),
+      refresh: m['refresh_token'] is String
+          ? m['refresh_token']! as String
+          : null,
       usuario: Usuario.fromJson(m['usuario']),
     );
   }

@@ -203,7 +203,8 @@ class _EstudianteTile extends StatelessWidget {
       title: Text(estudiante.nombreCompleto),
       subtitle: Text(
         '${estudiante.carrera} · Semestre ${estudiante.semestre}',
-        maxLines: 1,
+        // Dos líneas: con letra grande, una sola se cortaba.
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
       trailing: PromedioBadge(estudiante: estudiante),

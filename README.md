@@ -634,7 +634,7 @@ flutter test integration_test/duelo_real_test.dart -d linux \
   <img src="docs/capturas/passkeys/perfil_sin_soporte.png" width="180" alt="Navegador sin passkeys">
 </p>
 
-Implementa `docs/CONTRATO_PASSKEYS.md` v1 (api-tienda): una forma
+Implementa `docs/CONTRATO_PASSKEYS.md` v2 (api-tienda): una forma
 **adicional** de entrar con la huella, la cara o el PIN del dispositivo. La
 contraseña sigue sirviendo (y es la forma de recuperar la cuenta).
 
@@ -644,9 +644,11 @@ contraseña sigue sirviendo (y es la forma de recuperar la cuenta).
 - **Login:** botón «Entrar con passkey» (no hace falta escribir el alias: el
   navegador ofrece las passkeys de este dominio). Devuelve los mismos tokens
   que la contraseña, así que la sesión se guarda y se renueva igual.
-- **Perfil → Mis passkeys:** crearlas (con un nombre), verlas (creada, último
-  uso, si se sincroniza entre tus dispositivos) y borrarlas. Con un navegador
-  sin soporte, la sección explica por qué y qué navegadores usar.
+- **Perfil → Mis passkeys:** crearlas (con un nombre y **tu contraseña
+  actual**: así, alguien con un token robado no puede añadir una passkey
+  suya), verlas (creada, último uso, si se sincroniza entre tus dispositivos)
+  y borrarlas (máximo 10). Con un navegador sin soporte, la sección explica
+  por qué y qué navegadores usar.
 - **Cancelar no es un error:** «No se creó la passkey. Puedes intentarlo de
   nuevo cuando quieras.» Una passkey borrada o de otra cuenta: «Esa passkey
   ya no sirve para entrar…».

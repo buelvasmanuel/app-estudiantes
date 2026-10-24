@@ -150,6 +150,16 @@ void main() {
     expect(find.text('Jorge Rodríguez'), findsOneWidget);
   });
 
+  testWidgets('enlace directo al registro sin sesión: abre el registro', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      appDePrueba(_servidor().api(), conSesion: false, inicial: Rutas.registro),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Crear cuenta'), findsOneWidget);
+  });
+
   testWidgets('enlace a un estudiante sin sesión: login y luego el detalle', (
     tester,
   ) async {

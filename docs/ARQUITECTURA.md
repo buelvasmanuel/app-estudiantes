@@ -76,6 +76,10 @@ assets/icono/                          icono.png + icono_foreground.png (flutter
 
 - Cualquier respuesta HTTP (incluso 4xx/5xx) marca el servidor como despierto.
 - `_esLocal` (regex de IP privada/localhost) solo cambia el consejo del mensaje de error.
+- `_soloEsteEquipo` (`localhost`, `127.x`, `10.0.2.2`): nunca hay
+  «despertando» y el límite es siempre 8 s (también en `/auth/*`); el error
+  explica que esa dirección es local y cómo pasar `API_URL` (un celular real
+  lanzado sin ella usa la del emulador).
 - Errores: `TimeoutException` y `http.ClientException` → `ApiException(statusCode: null)`;
   4xx/5xx → `ApiException` con el `detail` de FastAPI (texto, `{mensaje}` o lista de Pydantic).
 - El cuerpo se decodifica a mano como UTF-8 (FastAPI no envía `charset`).

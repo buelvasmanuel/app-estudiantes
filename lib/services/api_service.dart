@@ -77,7 +77,8 @@ class PeticionApi {
   final bool conInterceptores;
 
   /// Tiempo máximo de espera propio. `null` = el normal (8 s, o 60 s si el
-  /// servidor puede estar dormido).
+  /// servidor puede estar dormido). Con una API en `localhost`, `127.x` o
+  /// `10.0.2.2` siempre es el normal.
   final Duration? limite;
 
   /// En la web, enviar las cookies (`withCredentials`): el refresh en cookie
@@ -149,11 +150,37 @@ class ApiService {
         DateTime.now().difference(ultima) > Config.inactividadParaDormir;
   }
 
-  /// Las direcciones locales nunca "se duermen": solo cambia el consejo que
-  /// se da cuando fallan.
+  /// Las direcciones de la red local nunca "se duermen": solo cambia el
+  /// consejo que se da cuando fallan.
   bool get _esLocal =>
       RegExp(r'//(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)')
           .hasMatch(baseUrl);
+
+  /// `localhost`, `127.x` o `10.0.2.2` (el PC visto desde el emulador de
+  /// Android): solo existen en este equipo o en el emulador. No hay nada que
+  /// despertar: si no responden, la API no está corriendo o la app corre en
+  /// otro aparato (p. ej. un celular real lanzado sin `API_URL`).
+  bool get _soloEsteEquipo {
+    final host = Uri.tryParse(baseUrl)?.host ?? '';
+    return host == 'localhost' || host == '10.0.2.2' || host.startsWith('127.');
+  }
+
+  String get _consejo {
+    if (_soloEsteEquipo) {
+      final donde = Uri.tryParse(baseUrl)?.host == '10.0.2.2'
+          ? 'solo funciona en el emulador de Android (es el PC visto desde '
+                'el emulador)'
+          : 'solo funciona en este mismo equipo';
+      return 'Esa dirección es local: $donde. Si la app corre ahí, comprueba que la '
+          'API está corriendo (uvicorn app.main:app --reload --host 0.0.0.0). '
+          'En un celular real, lanza la app con la dirección de la API:\n'
+          'flutter run --dart-define=API_URL=http://<IP del PC>:8000\n'
+          '(o la URL de la API en Render).';
+    }
+    return _esLocal
+        ? '¿Está corriendo? uvicorn app.main:app --reload --host 0.0.0.0'
+        : 'Comprueba tu conexión a internet.';
+  }
 
   // --- Endpoints -------------------------------------------------------------
 
@@ -236,9 +263,14 @@ class ApiService {
   // --- Detalles internos ----------------------------------------------------
 
   Future<Object?> _enviar(PeticionApi peticion) async {
-    final enFrio = _enFrio;
-    final limite =
-        peticion.limite ?? (enFrio ? Config.timeoutArranque : Config.timeout);
+    // Una dirección de este equipo no se duerme: sin aviso de «despertando»
+    // y con el tiempo de espera normal.
+    final enFrio = _enFrio && !_soloEsteEquipo;
+    // Los límites largos (p. ej. los 60 s de `/auth/*`) son para esperar a
+    // que Render despierte; en este equipo, el normal.
+    final limite = _soloEsteEquipo
+        ? Config.timeout
+        : peticion.limite ?? (enFrio ? Config.timeoutArranque : Config.timeout);
     Timer? aviso;
     if (enFrio) {
       _peticionesEnFrio++;
@@ -251,15 +283,18 @@ class ApiService {
     } on TimeoutException {
       throw ApiException(
         'La API no respondió en ${limite.inSeconds} s ($baseUrl). '
-        '${_esLocal ? 'Comprueba que uvicorn está corriendo y que la dirección es correcta.' : 'El servidor puede estar caído; inténtalo de nuevo en un momento.'}',
+        '${_soloEsteEquipo
+            ? _consejo
+            : _esLocal
+            ? 'Comprueba que uvicorn está corriendo y que la dirección es correcta.'
+            : 'El servidor puede estar caído; inténtalo de nuevo en un momento.'}',
         esTimeout: true,
       );
     } on http.ClientException {
       // En Linux/Android, http convierte el SocketException ("conexión
       // rechazada") en ClientException; en web, también llega así.
       throw ApiException(
-        'No se pudo conectar con la API en $baseUrl.\n'
-        '${_esLocal ? '¿Está corriendo? uvicorn app.main:app --reload --host 0.0.0.0' : 'Comprueba tu conexión a internet.'}',
+        'No se pudo conectar con la API en $baseUrl.\n$_consejo',
       );
     } finally {
       if (enFrio) {

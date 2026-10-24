@@ -263,11 +263,16 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
                         // Se comprueba la sesión guardada y el servidor está
                         // despertando: el login no espera (si había sesión,
                         // se entra solo).
+                        // (Con una API local no hay nada que despertar.)
                         ListenableBuilder(
-                          listenable: ref.watch(sesionProvider),
+                          listenable: Listenable.merge([
+                            ref.watch(sesionProvider),
+                            despertando,
+                          ]),
                           builder: (context, _) =>
                               ref.read(sesionProvider).estado ==
-                                  EstadoSesion.restaurando
+                                      EstadoSesion.restaurando &&
+                                  despertando.value
                               ? const Padding(
                                   padding: EdgeInsets.only(bottom: 16),
                                   child: _AvisoDespertando(),

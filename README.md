@@ -135,6 +135,22 @@ flutter run -d chrome
 Funciona porque la API permite CORS desde cualquier origen
 (`allow_origins=["*"]`, solo para desarrollo).
 
+> **En un celular real, pasa siempre `--dart-define=API_URL=…`.** Sin ella,
+> en Android la app usa `http://10.0.2.2:8000`, que solo existe dentro del
+> emulador: en el celular no responde nadie y, a los 8 s, la app lo explica
+> («Esa dirección es local…») con el comando para pasar la URL. Las tres
+> formas:
+>
+> ```bash
+> # API en el PC, celular por USB (ver abajo)
+> adb reverse tcp:8000 tcp:8000
+> flutter run -d <id-del-celular> --dart-define=API_URL=http://127.0.0.1:8000
+> # API en el PC, celular por WiFi (ver abajo)
+> flutter run -d <id-del-celular> --dart-define=API_URL=http://192.168.x.y:8000
+> # API de la nube (Render), sin levantar nada en el PC
+> flutter run -d <id-del-celular> --dart-define=API_URL=https://api-tienda-wjac.onrender.com
+> ```
+
 ### Celular por USB (recomendado para probar en el celular)
 
 Activa la *depuración USB* en el celular (Opciones de desarrollador),
@@ -371,6 +387,7 @@ done
 | En Linux los sonidos no suenan (en la consola: `LinuxAudioError … gst-stream-error-quark`) | Faltan plugins de GStreamer para leer MP3: Arch `sudo pacman -S gst-plugins-base gst-plugins-good`, Ubuntu `sudo apt install gstreamer1.0-plugins-base gstreamer1.0-plugins-good`. `flutter test integration_test/sonidos_test.dart -d linux` dice exactamente qué falta. La app sigue funcionando sin sonido. |
 | "Sin conexión con la API" | La API no está corriendo, o no escucha en `0.0.0.0`, o la URL no es la correcta para ese dispositivo (ver tabla de arriba). |
 | Funciona en Linux pero no en el celular | Falta `adb reverse tcp:8000 tcp:8000` (USB) o la IP/cortafuegos (WiFi). |
+| En el celular: «No se pudo conectar con la API en http://10.0.2.2:8000… Esa dirección es local» | Se lanzó sin `API_URL` y usa la dirección del emulador. Vuelve a lanzar con `--dart-define=API_URL=…` (ver [Celular por USB](#celular-por-usb-recomendado-para-probar-en-el-celular)). Con una dirección local (`10.0.2.2`, `127.0.0.1`, `localhost`) la app nunca dice «Despertando el servidor»: eso solo pasa con la API en Render. |
 | "Servicio no disponible (503): Modelo no entrenado" | En la API: `python -m scripts.entrenar_modelo`. |
 | Lista vacía | En la API: `python -m scripts.seed_estudiantes`. |
 | El celular aparece y desaparece en `flutter devices` | Hay dos `adb` instalados (`/usr/bin/adb` y el del SDK). Deja solo uno. |

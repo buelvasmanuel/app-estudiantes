@@ -25,6 +25,14 @@ class ServidorFalso {
 
   final usuarios = <String, String>{'Detective_Ana': 'una frase larga'};
 
+  /// Ejemplos de la lista de la API (CONTRATO_AUTH v1.4).
+  static const passwordsComunes = {
+    '1234567890',
+    'qwertyuiop',
+    'universidad1',
+    'contraseña123',
+  };
+
   /// Simula que no hay red: toda petición falla sin respuesta.
   bool sinRed = false;
 
@@ -93,6 +101,20 @@ class ServidorFalso {
         return _emitir(alias! as String);
       case '/auth/registro':
         final alias = cuerpo['alias']! as String;
+        // CONTRATO_AUTH v1.4: contraseñas comunes (sin mayúsculas).
+        if (passwordsComunes.contains(
+          (cuerpo['password']! as String).toLowerCase(),
+        )) {
+          return json({
+            'detail': {
+              'codigo': 'password_comun',
+              'mensaje':
+                  'Esa contraseña es demasiado común y se adivina enseguida: '
+                  'elige otra',
+              'campo': 'password',
+            },
+          }, 422);
+        }
         if (usuarios.keys.any((u) => u.toLowerCase() == alias.toLowerCase())) {
           return error(409, 'alias_en_uso');
         }

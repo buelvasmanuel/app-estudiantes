@@ -14,10 +14,17 @@ class PasskeysApi {
   final ApiService _api;
   final NavegadorPasskeys _navegador;
 
-  /// Crea una passkey en este dispositivo y la registra (con sesión).
-  Future<Passkey> crear({String? nombre}) async {
+  /// Crea una passkey en este dispositivo y la registra (con sesión). La
+  /// API pide la contraseña actual (CONTRATO_PASSKEYS v2): con solo un token
+  /// robado no se puede añadir una passkey.
+  Future<Passkey> crear({
+    required String passwordActual,
+    String? nombre,
+  }) async {
     final o = _api.parsear(
-      await _api.post('/passkeys/registro/opciones', null),
+      await _api.post('/passkeys/registro/opciones', {
+        'password_actual': passwordActual,
+      }),
       opcionesPasskey,
     );
     final credencial = await _navegador.crear(o.opciones);

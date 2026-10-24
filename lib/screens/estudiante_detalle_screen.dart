@@ -5,6 +5,7 @@ import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/promedio_badge.dart';
 import '../formato.dart';
+import '../widgets/titulo_barra.dart';
 
 /// Detalle de un estudiante. Usa los datos que ya trajo el listado, así que
 /// no necesita otra petición a la API.
@@ -20,7 +21,7 @@ class EstudianteDetalleScreen extends StatelessWidget {
     final e = estudiante;
 
     return Scaffold(
-      appBar: AppBar(title: Text(e.nombreCompleto)),
+      appBar: AppBar(title: TituloBarra(e.nombreCompleto)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AnchoMaximo(

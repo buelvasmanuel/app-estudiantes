@@ -9,6 +9,7 @@ import '../router.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
 import 'duelo_screen.dart';
+import '../widgets/titulo_barra.dart';
 
 /// Entrada al duelo: contra el Búho Máquina o contra otro detective. Cada
 /// modo tiene su propio límite de 3 duelos con XP al día (CONTRATO_DUELO
@@ -23,7 +24,10 @@ class ElegirRivalScreen extends ConsumerWidget {
     // resultado.
     final xpHoy = ref.watch(xpHoyDuelosProvider).value ?? const {};
     return Scaffold(
-      appBar: AppBar(title: const Text('Duelo'), actions: const [MenuCuenta()]),
+      appBar: AppBar(
+        title: const TituloBarra('Duelo'),
+        actions: const [MenuCuenta()],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [

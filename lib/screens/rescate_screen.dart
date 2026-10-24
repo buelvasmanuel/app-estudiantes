@@ -19,6 +19,7 @@ import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
 import '../formato.dart';
+import '../widgets/titulo_barra.dart';
 
 /// Un caso del Laboratorio: aplicar fichas, ver el medidor y confirmar.
 class RescateScreen extends ConsumerStatefulWidget {
@@ -69,7 +70,7 @@ class _RescateScreenState extends ConsumerState<RescateScreen> {
     final estado = ref.watch(casoProvider(widget.estudianteId));
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rescate'),
+        title: const TituloBarra('Rescate'),
         actions: const [MenuCuenta()],
       ),
       body: switch (estado) {

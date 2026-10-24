@@ -34,6 +34,26 @@ Future<void> _abrir(
   await tester.pumpAndSettle();
 }
 
+/// Abre «Crear passkey», escribe la contraseña ([password]) y, si se da,
+/// el [nombre]; y confirma.
+Future<void> _crearPasskey(
+  WidgetTester tester, {
+  String password = PasskeysFalso.password,
+  String? nombre,
+}) async {
+  await tester.ensureVisible(find.byKey(const Key('crear-passkey')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('crear-passkey')));
+  await tester.pumpAndSettle();
+  if (nombre != null) {
+    await tester.enterText(find.byKey(const Key('nombre-passkey')), nombre);
+  }
+  await tester.enterText(find.byKey(const Key('password-passkey')), password);
+  await tester.pump();
+  await tester.tap(find.byKey(const Key('confirmar-nombre-passkey')));
+  await tester.pumpAndSettle();
+}
+
 /// Lo que se pidió a /passkeys y /auth, sin cuerpo.
 List<String> _rutas(PasskeysFalso s) =>
     s.registro.map((r) => r.split(' ').take(2).join(' ')).toList();
@@ -191,15 +211,13 @@ void main() {
       final s = PasskeysFalso();
       final navegador = NavegadorFalso();
       await _abrir(tester, s, ruta: Rutas.perfil, navegador: navegador);
-      await tester.tap(find.byKey(const Key('crear-passkey')));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const Key('nombre-passkey')),
-        'Celular de Ana',
-      );
-      await tester.tap(find.byKey(const Key('confirmar-nombre-passkey')));
-      await tester.pumpAndSettle();
+      await _crearPasskey(tester, nombre: 'Celular de Ana');
 
+      // v2: la contraseña va en las opciones (no en la verificación).
+      expect(
+        s.registro.firstWhere((r) => r.contains('/registro/opciones')),
+        contains('{"password_actual":"una frase larga"}'),
+      );
       expect(
         _rutas(s),
         containsAllInOrder([
@@ -231,10 +249,7 @@ void main() {
         ruta: Rutas.perfil,
         navegador: NavegadorFalso()..fallo = const PasskeyCancelada(),
       );
-      await tester.tap(find.byKey(const Key('crear-passkey')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('confirmar-nombre-passkey')));
-      await tester.pumpAndSettle();
+      await _crearPasskey(tester);
       expect(
         find.text(
           'No se creó la passkey. Puedes intentarlo de nuevo cuando quieras.',
@@ -258,11 +273,38 @@ void main() {
         ruta: Rutas.perfil,
         navegador: NavegadorFalso()..fallo = const PasskeyYaEnEsteDispositivo(),
       );
+      await _crearPasskey(tester);
+      expect(find.text(MisPasskeysTextos.yaEnEsteDispositivo), findsOneWidget);
+    });
+
+    testWidgets('sin contraseña no se puede pulsar «Crear»', (tester) async {
+      await _abrir(tester, PasskeysFalso(), ruta: Rutas.perfil);
       await tester.tap(find.byKey(const Key('crear-passkey')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('confirmar-nombre-passkey')));
-      await tester.pumpAndSettle();
-      expect(find.text(MisPasskeysTextos.yaEnEsteDispositivo), findsOneWidget);
+      final crear = tester.widget<FilledButton>(
+        find.byKey(const Key('confirmar-nombre-passkey')),
+      );
+      expect(crear.onPressed, isNull);
+    });
+
+    testWidgets('contraseña equivocada (403): lo dice y no llama al '
+        'navegador', (tester) async {
+      final s = PasskeysFalso();
+      final navegador = NavegadorFalso();
+      await _abrir(tester, s, ruta: Rutas.perfil, navegador: navegador);
+      await _crearPasskey(tester, password: 'otra cosa');
+      expect(find.text(MisPasskeysTextos.passwordIncorrecta), findsOneWidget);
+      expect(navegador.opciones, isEmpty);
+    });
+
+    testWidgets('con 10 passkeys (409): explica el máximo', (tester) async {
+      final s = PasskeysFalso();
+      s.passkeys.addAll([
+        for (var i = 2; i <= 10; i++) passkeyJson(i, 'Passkey $i'),
+      ]);
+      await _abrir(tester, s, ruta: Rutas.perfil);
+      await _crearPasskey(tester);
+      expect(find.text(MisPasskeysTextos.demasiadas), findsOneWidget);
     });
 
     testWidgets('borrar pide confirmación y la quita', (tester) async {

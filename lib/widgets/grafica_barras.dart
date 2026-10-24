@@ -226,6 +226,12 @@ class _GraficaBarrasState extends State<GraficaBarras> {
                   // Un "ancla" de 1 px centrada bajo la barra; el texto se
                   // apoya en ella por su esquina superior derecha y se gira
                   // 45° sobre ese punto: así termina justo bajo su barra.
+                  // Inclinado, ocupa ~0,71·ancho hacia la izquierda: las
+                  // primeras barras tienen poco sitio, así que su etiqueta
+                  // se limita a lo que cabe (y si no, termina en «…») en vez
+                  // de salirse de la gráfica (pasaba a 360 px).
+                  final cabe = (_anchoEjeY + (i + 0.5) * anchoPorBarra) / 0.71;
+                  final ancho = math.min(anchoEtiqueta, cabe);
                   return SideTitleWidget(
                     meta: meta,
                     space: 6,
@@ -238,7 +244,7 @@ class _GraficaBarrasState extends State<GraficaBarras> {
                           Positioned(
                             top: 0,
                             right: 0,
-                            width: anchoEtiqueta,
+                            width: ancho,
                             child: Transform.rotate(
                               angle: -math.pi / 4,
                               alignment: Alignment.topRight,

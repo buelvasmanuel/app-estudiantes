@@ -119,6 +119,9 @@ class DueloJugadorFalso {
   /// Qué devuelve `GET /duelos/{id}` (p. ej. el vencimiento aplicado).
   Map<String, Object?> Function()? alConsultar;
 
+  /// Las próximas N búsquedas responden `503 emparejamiento_ocupado` (v2.4).
+  int ocupado = 0;
+
   ApiService api() =>
       ApiService(baseUrl: 'http://api.test', client: MockClient(_atender));
 
@@ -140,6 +143,10 @@ class DueloJugadorFalso {
       return respuestaJson({'duelos': <Object?>[], 'xp_hoy': ?xpHoy});
     }
     if (ruta == '/duelos' && p.method == 'POST') {
+      if (ocupado > 0) {
+        ocupado--;
+        return ServidorFalso.error(503, 'emparejamiento_ocupado');
+      }
       if (enCurso) {
         return ServidorFalso.json({
           'detail': {

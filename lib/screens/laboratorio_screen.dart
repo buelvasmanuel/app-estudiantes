@@ -13,6 +13,7 @@ import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
 import '../formato.dart';
+import '../widgets/titulo_barra.dart';
 
 /// Pestaña "Laboratorio": la lista de estudiantes que se pueden rescatar.
 class LaboratorioScreen extends ConsumerWidget {
@@ -23,7 +24,7 @@ class LaboratorioScreen extends ConsumerWidget {
     final estado = ref.watch(casosProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Laboratorio'),
+        title: const TituloBarra('Laboratorio'),
         actions: const [MenuCuenta()],
       ),
       body: switch (estado) {

@@ -14,6 +14,7 @@ import '../tema/temas.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
 import '../formato.dart';
+import '../widgets/titulo_barra.dart';
 
 /// Pestaña "Perfil": el detective (nivel, cifras, insignias) y el ranking.
 class PerfilScreen extends ConsumerWidget {
@@ -25,7 +26,7 @@ class PerfilScreen extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Perfil'),
+          title: const TituloBarra('Perfil'),
           actions: const [MenuCuenta()],
           bottom: const TabBar(
             tabs: [

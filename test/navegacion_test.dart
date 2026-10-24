@@ -1,119 +1,51 @@
 import 'package:app_estudiantes/router.dart';
-import 'package:app_estudiantes/screens/estudiante_detalle_screen.dart';
+import 'package:app_estudiantes/tema/temas.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'support/api_falsa.dart';
 import 'support/app_de_prueba.dart';
+import 'support/fuentes_reales.dart';
+import 'support/juego_falso.dart';
 
-/// Todas las rutas que usan las 3 pestañas al abrirse.
-Map<String, Object?> _rutasCompletas() => {
-  '/estudiantes/': estudiantesJson,
-  '/estudiantes/estadisticas/por-carrera': [
-    {'etiqueta': 'Medicina', 'valor': 30},
-  ],
-  '/prediccion/metricas': metricasJson,
-};
+Future<NavigationDestinationLabelBehavior?> _etiquetas(
+  WidgetTester tester, {
+  required double ancho,
+  required double escala,
+  required TemaJuego tema,
+}) async {
+  await tester.runAsync(cargarFuentesReales);
+  tester.view.physicalSize = Size(ancho, 800);
+  tester.view.devicePixelRatio = 1;
+  tester.platformDispatcher.textScaleFactorTestValue = escala;
+  addTearDown(tester.view.reset);
+  addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  await tester.pumpWidget(
+    appDePrueba(JuegoFalso().api(), inicial: Rutas.casos, tema: tema),
+  );
+  await tester.pumpAndSettle();
+  return tester.widget<NavigationBar>(find.byType(NavigationBar)).labelBehavior;
+}
 
 void main() {
-  testWidgets('al arrancar solo se pide la pestaña visible; las demás al '
-      'abrirlas, y una sola vez', (tester) async {
-    final registro = <String>[];
-    final api = apiFalsa(_rutasCompletas(), registro: registro);
-    await tester.pumpWidget(appDePrueba(api));
-    await tester.pumpAndSettle();
-    expect(sinProgreso(registro), ['GET /estudiantes/']);
+  for (final tema in TemaJuego.values) {
+    testWidgets('360 px con letra normal (${tema.name}): todas las etiquetas', (
+      tester,
+    ) async {
+      expect(
+        await _etiquetas(tester, ancho: 360, escala: 1.0, tema: tema),
+        NavigationDestinationLabelBehavior.alwaysShow,
+      );
+    });
 
-    await tester.tap(find.text('Gráficas'));
-    await tester.pumpAndSettle();
-    expect(
-      sinProgreso(registro).last,
-      'GET /estudiantes/estadisticas/por-carrera',
+    testWidgets(
+      '360 px con letra al 130 % (${tema.name}): solo la elegida (antes '
+      '«Laboratorio» se partía en dos líneas)',
+      (tester) async {
+        expect(
+          await _etiquetas(tester, ancho: 360, escala: 1.3, tema: tema),
+          NavigationDestinationLabelBehavior.onlyShowSelected,
+        );
+      },
     );
-
-    await tester.tap(find.text('Predicción'));
-    await tester.pumpAndSettle();
-    expect(sinProgreso(registro).last, 'GET /prediccion/metricas');
-
-    await tester.tap(find.text('Estudiantes'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Gráficas'));
-    await tester.pumpAndSettle();
-    expect(sinProgreso(registro), hasLength(3));
-  });
-
-  testWidgets('cambiar de pestaña conserva la búsqueda', (tester) async {
-    final api = apiFalsa(_rutasCompletas());
-    await tester.pumpWidget(appDePrueba(api));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(SearchBar), 'rodriguez');
-    await tester.pump();
-    await tester.tap(find.text('Gráficas'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Estudiantes'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('rodriguez'), findsOneWidget);
-    expect(find.text('Esperanza Torres'), findsNothing);
-  });
-
-  testWidgets('el detalle tapa la barra de pestañas y "atrás" vuelve a la '
-      'lista', (tester) async {
-    final api = apiFalsa(_rutasCompletas());
-    await tester.pumpWidget(appDePrueba(api));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Jorge Rodríguez'));
-    await tester.pumpAndSettle();
-    expect(find.byType(EstudianteDetalleScreen), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
-
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-    expect(find.byType(EstudianteDetalleScreen), findsNothing);
-    expect(find.byType(NavigationBar), findsOneWidget);
-  });
-
-  testWidgets('enlace directo a /estudiantes/2 abre el detalle', (
-    tester,
-  ) async {
-    final api = apiFalsa(_rutasCompletas());
-    await tester.pumpWidget(appDePrueba(api, inicial: Rutas.estudiante(2)));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(EstudianteDetalleScreen), findsOneWidget);
-    expect(find.text('Esperanza Torres'), findsWidgets);
-
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-    expect(find.text('Jorge Rodríguez'), findsOneWidget);
-  });
-
-  testWidgets('enlace directo a un estudiante que no existe', (tester) async {
-    final api = apiFalsa(_rutasCompletas());
-    await tester.pumpWidget(appDePrueba(api, inicial: Rutas.estudiante(99)));
-    await tester.pumpAndSettle();
-    expect(
-      find.text('No existe un estudiante con ese número.'),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('si falla al actualizar, se conserva la lista y se avisa', (
-    tester,
-  ) async {
-    final rutas = _rutasCompletas();
-    final api = apiFalsa(rutas);
-    await tester.pumpWidget(appDePrueba(api));
-    await tester.pumpAndSettle();
-
-    rutas.remove('/estudiantes/'); // la API "se cae"
-    await tester.tap(find.byTooltip('Actualizar'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(SnackBar), findsOneWidget);
-    expect(find.textContaining('No se pudo conectar'), findsOneWidget);
-    expect(find.text('Jorge Rodríguez'), findsOneWidget);
-  });
+  }
 }

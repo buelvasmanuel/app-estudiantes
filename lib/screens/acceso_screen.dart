@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,6 +73,10 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
   /// Aviso que no es un error (p. ej., se canceló la passkey).
   String? _info;
 
+  /// Error que va junto al campo de la contraseña (CONTRATO_AUTH v1.4:
+  /// `422 password_comun`). Se quita al escribir otra.
+  String? _errorPassword;
+
   /// Tras un 429: hasta cuándo esperar (se muestra una cuenta atrás).
   DateTime? _bloqueadoHasta;
   Timer? _cuentaAtras;
@@ -90,7 +95,7 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
   int get _segundosBloqueo {
     final hasta = _bloqueadoHasta;
     if (hasta == null) return 0;
-    final restante = hasta.difference(DateTime.now());
+    final restante = hasta.difference(clock.now());
     return restante.isNegative ? 0 : (restante.inMilliseconds / 1000).ceil();
   }
 
@@ -100,6 +105,7 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
     setState(() {
       _enviando = true;
       _error = null;
+      _errorPassword = null;
       _info = null;
     });
     final sesion = ref.read(sesionProvider);
@@ -112,7 +118,13 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
       // Con sesión, el router lleva solo a la app (o a `desde`).
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _error = e);
+      setState(() {
+        if (e.codigo == 'password_comun') {
+          _errorPassword = e.mensaje;
+        } else {
+          _error = e;
+        }
+      });
       final espera = e.reintentarEn;
       if (e.statusCode == 429 && espera != null) _bloquear(espera);
     } finally {
@@ -175,11 +187,16 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
   }
 
   void _bloquear(Duration espera) {
-    _bloqueadoHasta = DateTime.now().add(espera);
+    _bloqueadoHasta = clock.now().add(espera);
     _cuentaAtras?.cancel();
     _cuentaAtras = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (_segundosBloqueo == 0) t.cancel();
-      setState(() {});
+      setState(() {
+        if (_segundosBloqueo == 0) {
+          t.cancel();
+          // El aviso del bloqueo ya no vale: se quita.
+          if (_error?.statusCode == 429) _error = null;
+        }
+      });
     });
   }
 
@@ -272,7 +289,14 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
                           key: const Key('password'),
                           controller: _password,
                           obscureText: !_verPassword,
+                          onChanged: (_) {
+                            if (_errorPassword != null) {
+                              setState(() => _errorPassword = null);
+                            }
+                          },
                           decoration: InputDecoration(
+                            errorText: _errorPassword,
+                            errorMaxLines: 3,
                             labelText: 'Contraseña',
                             prefixIcon: const Icon(Icons.lock_outline),
                             helperText: _esRegistro
@@ -280,6 +304,8 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
                                       'caracteres. Una frase es fácil de '
                                       'recordar.'
                                 : null,
+                            // Que no se corte a 360 px (ni con letra grande).
+                            helperMaxLines: 3,
                             suffixIcon: IconButton(
                               tooltip: _verPassword
                                   ? 'Ocultar contraseña'
@@ -345,7 +371,13 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
                         if (_error case final error?) ...[
                           const SizedBox(height: 16),
                           _Mensaje(
-                            texto: error.mensaje,
+                            // Con bloqueo, el texto de la API («…en 27 s»)
+                            // se quedaría viejo: la cuenta atrás es la de la
+                            // app.
+                            texto: error.statusCode == 429 && bloqueo > 0
+                                ? 'Demasiados intentos. Espera $bloqueo s '
+                                      'antes de volver a intentarlo.'
+                                : error.mensaje,
                             icono: Icons.error_outline,
                             esError: true,
                           ),

@@ -101,6 +101,13 @@ String? redirigir(
     EstadoSesion.restaurando =>
       ruta == Rutas.cargando ? null : con(Rutas.cargando, pedida),
     EstadoSesion.sinSesion when enAcceso => null,
+    // Un enlace directo al registro (`/#/registro`) pasa por «cargando»
+    // mientras se comprueba la sesión: sin sesión, vuelve al registro (no al
+    // login).
+    EstadoSesion.sinSesion
+        when ruta == Rutas.cargando &&
+            state.uri.queryParameters['desde'] == Rutas.registro =>
+      Rutas.registro,
     EstadoSesion.sinSesion => con(
       Rutas.login,
       ruta == Rutas.cargando ? desde : pedida,
@@ -314,6 +321,25 @@ class InicioPage extends StatelessWidget {
 
   final StatefulNavigationShell shell;
 
+  /// ¿Cabe la etiqueta más larga («Laboratorio») en su quinto de ancho, con
+  /// la letra y la escala de texto del usuario?
+  static bool _etiquetasCaben(BuildContext context) {
+    final tema = Theme.of(context);
+    final estilo =
+        tema.navigationBarTheme.labelTextStyle?.resolve({}) ??
+        tema.textTheme.labelMedium;
+    final pintor = TextPainter(
+      text: TextSpan(text: 'Laboratorio', style: estilo),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final ancho = pintor.width;
+    pintor.dispose();
+    // Cada destino deja unos 2 px a cada lado para la etiqueta.
+    return ancho <= MediaQuery.sizeOf(context).width / 5 - 4;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -321,6 +347,13 @@ class InicioPage extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: shell.currentIndex,
         onDestinationSelected: shell.goBranch,
+        // Cinco etiquetas a ~72 px cada una: con letra grande en un celular
+        // estrecho, «Laboratorio» se partía en dos líneas. Entonces solo se
+        // muestra la de la pestaña elegida (las demás siguen con su icono y
+        // su nombre para el lector de pantalla).
+        labelBehavior: _etiquetasCaben(context)
+            ? NavigationDestinationLabelBehavior.alwaysShow
+            : NavigationDestinationLabelBehavior.onlyShowSelected,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.location_city_outlined),

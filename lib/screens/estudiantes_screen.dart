@@ -9,6 +9,7 @@ import '../services/api_service.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
 import '../widgets/promedio_badge.dart';
+import '../widgets/titulo_barra.dart';
 
 /// Pestaña 1: listado de estudiantes con buscador, filtro y pull-to-refresh.
 class EstudiantesScreen extends ConsumerStatefulWidget {
@@ -63,7 +64,7 @@ class _EstudiantesScreenState extends ConsumerState<EstudiantesScreen> {
     final estudiantes = estado.value;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Estudiantes'),
+        title: const TituloBarra('Estudiantes'),
         bottom: widget.pestanas,
         actions: [
           if (estudiantes != null)
@@ -106,7 +107,7 @@ class _EstudiantesScreenState extends ConsumerState<EstudiantesScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             child: SearchBar(
-              hintText: 'Buscar por nombre, carrera o ciudad',
+              hintText: 'Nombre, carrera o ciudad',
               leading: const Icon(Icons.search),
               elevation: const WidgetStatePropertyAll(0),
               onChanged: (texto) => setState(() => _busqueda = texto),
@@ -202,7 +203,8 @@ class _EstudianteTile extends StatelessWidget {
       title: Text(estudiante.nombreCompleto),
       subtitle: Text(
         '${estudiante.carrera} · Semestre ${estudiante.semestre}',
-        maxLines: 1,
+        // Dos líneas: con letra grande, una sola se cortaba.
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
       trailing: PromedioBadge(estudiante: estudiante),

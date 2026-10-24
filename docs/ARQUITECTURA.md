@@ -292,3 +292,16 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   pregunta siempre con `{}`: el `401 refresh_invalido` del arranque cierra
   sin aviso. El APK y el escritorio no cambian (tests en
   `sesion_cookie_test.dart`).
+- **Fase 8, revisión de calidad y contratos de la auditoría** (v1.9.0):
+  CONTRATO_PASSKEYS v2 (`PasskeysApi.crear(passwordActual:)`; diálogo con
+  nombre y contraseña; 403/409/429 explicados), CONTRATO_AUTH v1.4
+  (`422 password_comun` como `errorText` del campo de contraseña) y
+  CONTRATO_DUELO 2.4 (`buscarRival` reintenta dos veces el
+  `503 emparejamiento_ocupado`). De la revisión: `TituloBarra` (títulos que
+  se reducen en vez de cortarse), etiquetas de la barra inferior solo de la
+  pestaña elegida cuando no caben (`InicioPage._etiquetasCaben`, mide con la
+  letra y la escala reales), etiquetas inclinadas de las gráficas limitadas a
+  su sitio, aviso del 429 con cuenta atrás real, contador al despertar el
+  servidor (`TiempoEsperando`), pantalla de carga HTML en `web/index.html`
+  (se quita con `flutter-first-frame`), `lang="es"`, nombre y descripción de
+  la web, y el enlace directo a `/registro` sin sesión ya no acaba en el login.

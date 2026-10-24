@@ -61,20 +61,13 @@ class _EstudiantesScreenState extends ConsumerState<EstudiantesScreen> {
   @override
   Widget build(BuildContext context) {
     final estado = ref.watch(estudiantesProvider);
-    final estudiantes = estado.value;
     return Scaffold(
       appBar: AppBar(
         title: const TituloBarra('Estudiantes'),
         bottom: widget.pestanas,
-        actions: [
-          if (estudiantes != null)
-            IconButton(
-              tooltip: 'Actualizar',
-              onPressed: _actualizar,
-              icon: const Icon(Icons.refresh_rounded),
-            ),
-          const MenuCuenta(),
-        ],
+        // Sin botón «Actualizar»: la lista se actualiza deslizando hacia
+        // abajo (y así el título cabe a 360 px).
+        actions: const [MenuCuenta()],
       ),
       body: switch (estado) {
         AsyncValue(value: final List<Estudiante> lista) => _contenido(lista),

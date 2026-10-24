@@ -43,9 +43,11 @@ jobs:
       - run: flutter test
 
       # --base-href: la web vive en https://<usuario>.github.io/<repo>/
+      # --no-web-resources-cdn: CanvasKit va en la propia web, sin el CDN de
+      # Google.
       - name: Compilar web
         run: >
-          flutter build web --release
+          flutter build web --release --no-web-resources-cdn
           --base-href "/${{ github.event.repository.name }}/"
           --dart-define=API_URL=${{ vars.API_URL }}
 

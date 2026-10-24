@@ -222,5 +222,81 @@ void main() {
       'cred POST /auth/refresh X-Refresh-En-Cookie {}',
     );
     expect(find.byType(AccesoScreen), findsNothing);
+    await tester.pumpAndSettle(); // que termine de cargar lo de dentro
+  });
+
+  group('arranque con el servidor dormido', arranqueConServidorDormido);
+}
+
+void arranqueConServidorDormido() {
+  Future<ServidorCookie> abrir(
+    WidgetTester tester, {
+    required bool conCookie,
+  }) async {
+    final servidor = ServidorCookie();
+    if (conCookie) {
+      final previa = _sesion(servidor.api(), AlmacenEnMemoria());
+      await previa.iniciarSesion('Detective_Ana', 'una frase larga');
+      servidor.registro.clear();
+    }
+    servidor.demoraRefresh = const Duration(seconds: 40);
+    await tester.pumpWidget(
+      appDePrueba(
+        servidor.api(),
+        inicial: Rutas.perfil,
+        conSesion: false,
+        modoCookie: true,
+      ),
+    );
+    return servidor;
+  }
+
+  testWidgets('con sesión: login con aviso mientras despierta y luego entra '
+      'solo', (tester) async {
+    await abrir(tester, conCookie: true);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(AccesoScreen), findsNothing); // aún «cargando»
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+    expect(find.byType(AccesoScreen), findsOneWidget);
+    expect(find.byKey(const Key('aviso-despertando')), findsOneWidget);
+    await tester.pump(const Duration(seconds: 37));
+    await tester.pumpAndSettle();
+    expect(find.byType(AccesoScreen), findsNothing); // entró solo
+  });
+
+  testWidgets('sin sesión: el login queda sin aviso ni error al terminar', (
+    tester,
+  ) async {
+    await abrir(tester, conCookie: false);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump();
+    expect(find.byKey(const Key('aviso-despertando')), findsOneWidget);
+    await tester.pump(const Duration(seconds: 37));
+    await tester.pumpAndSettle();
+    expect(find.byType(AccesoScreen), findsOneWidget);
+    expect(find.byKey(const Key('aviso-despertando')), findsNothing);
+    expect(find.byIcon(Icons.error_outline), findsNothing);
+  });
+
+  testWidgets('entrar a mano mientras despierta: la respuesta vieja (401) no '
+      'cierra la sesión nueva', (tester) async {
+    final servidor = await abrir(tester, conCookie: false);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump();
+    await tester.enterText(find.byKey(const Key('alias')), 'Detective_Ana');
+    await tester.enterText(
+      find.byKey(const Key('password')),
+      'una frase larga',
+    );
+    await tester.tap(find.text('Entrar'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(AccesoScreen), findsNothing);
+    // Llega el 401 del refresh del arranque: no debe sacarlo.
+    await tester.pump(const Duration(seconds: 40));
+    await tester.pumpAndSettle();
+    expect(find.byType(AccesoScreen), findsNothing);
+    expect(servidor.registro.where((r) => r.contains('/auth/logout')), isEmpty);
   });
 }

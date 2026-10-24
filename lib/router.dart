@@ -71,6 +71,7 @@ GoRouter crearRouterDesde(Ref ref, {String inicial = Rutas.campus}) {
   final router = crearRouter(
     sesion: ref.watch(sesionProvider),
     tutorialVisto: tutorialVisto,
+    despertando: ref.watch(apiServiceProvider).despertando,
     inicial: inicial,
   );
   ref.onDispose(() {
@@ -83,10 +84,16 @@ GoRouter crearRouterDesde(Ref ref, {String inicial = Rutas.campus}) {
 /// A dónde llevar según el estado de la [sesion]. Sin sesión, todo lleva al
 /// login; la ruta pedida se guarda en `?desde=` para volver a ella después.
 /// Con sesión y sin haber visto el tutorial, primero el tutorial.
+///
+/// Mientras se comprueba la sesión guardada, si el servidor está
+/// [despertando] (Render dormido: más de un minuto), no se bloquea la
+/// pantalla: se muestra ya el login (con un aviso) y, si resulta que había
+/// sesión, se entra solo.
 String? redirigir(
   GestorSesion sesion,
   GoRouterState state, {
   bool tutorialVisto = true,
+  bool despertando = false,
 }) {
   final ruta = state.matchedLocation;
   final enAcceso = ruta == Rutas.login || ruta == Rutas.registro;
@@ -97,7 +104,14 @@ String? redirigir(
       ? destino
       : Uri(path: destino, queryParameters: {'desde': volverA}).toString();
 
+  final desdeCrudo = state.uri.queryParameters['desde'];
   return switch (sesion.estado) {
+    // Ya en el login o el registro mientras se comprueba: ahí se queda.
+    EstadoSesion.restaurando when enAcceso => null,
+    EstadoSesion.restaurando when despertando =>
+      ruta == Rutas.cargando && desdeCrudo == Rutas.registro
+          ? Rutas.registro
+          : con(Rutas.login, ruta == Rutas.cargando ? desde : pedida),
     EstadoSesion.restaurando =>
       ruta == Rutas.cargando ? null : con(Rutas.cargando, pedida),
     EstadoSesion.sinSesion when enAcceso => null,
@@ -105,8 +119,7 @@ String? redirigir(
     // mientras se comprueba la sesión: sin sesión, vuelve al registro (no al
     // login).
     EstadoSesion.sinSesion
-        when ruta == Rutas.cargando &&
-            state.uri.queryParameters['desde'] == Rutas.registro =>
+        when ruta == Rutas.cargando && desdeCrudo == Rutas.registro =>
       Rutas.registro,
     EstadoSesion.sinSesion => con(
       Rutas.login,
@@ -146,6 +159,7 @@ String? _rutaInterna(String? ruta) =>
 GoRouter crearRouter({
   required GestorSesion sesion,
   ValueListenable<bool>? tutorialVisto,
+  ValueListenable<bool>? despertando,
   String inicial = Rutas.campus,
 }) {
   final raiz = GlobalKey<NavigatorState>(debugLabel: 'raiz');
@@ -154,9 +168,13 @@ GoRouter crearRouter({
     initialLocation: inicial,
     // Cada cambio de sesión (login, logout, sesión revocada) o del tutorial
     // vuelve a evaluar redirect.
-    refreshListenable: Listenable.merge([sesion, ?tutorialVisto]),
-    redirect: (_, state) =>
-        redirigir(sesion, state, tutorialVisto: tutorialVisto?.value ?? true),
+    refreshListenable: Listenable.merge([sesion, ?tutorialVisto, ?despertando]),
+    redirect: (_, state) => redirigir(
+      sesion,
+      state,
+      tutorialVisto: tutorialVisto?.value ?? true,
+      despertando: despertando?.value ?? false,
+    ),
     routes: [
       GoRoute(path: '/', redirect: (_, _) => Rutas.campus),
       GoRoute(

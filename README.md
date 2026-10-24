@@ -42,13 +42,18 @@ arriba **Noche**, abajo **Expediente**.
 | **API** | <https://api-tienda-wjac.onrender.com/docs> |
 
 Hace falta una cuenta: al abrir la app, **«¿No tienes cuenta? Regístrate»**
-(alias y contraseña de al menos 10 caracteres). En el APK la sesión se
-recuerda; en la web, al recargar la página hay que volver a entrar (el token
-no se guarda en el navegador, ver [Cuentas y sesión](#cuentas-y-sesión)).
+(alias y contraseña de al menos 10 caracteres). La sesión se recuerda en el
+APK y en la web (en la web, con una cookie de la API; ver
+[Cuentas y sesión](#cuentas-y-sesión)). En Android la app se llama
+**Campus Detective** (en el cajón de apps de un celular de 360 dp el launcher
+la acorta a «Campus …»).
 
 La API está en el plan gratuito de Render, que se apaga tras ~15 min sin uso:
-la primera carga puede tardar hasta un minuto (la app lo avisa con
-*"Despertando el servidor…"*).
+la primera carga puede tardar uno o dos minutos. Mientras tanto la app no se
+queda en blanco: a los 3 s muestra ya el login con el aviso *"Despertando el
+servidor…"* y, si tenías la sesión iniciada, entras solo en cuanto responde
+(también puedes entrar a mano sin esperar). La web no usa el CDN de Google:
+CanvasKit y las fuentes van en la propia web.
 
 ### Instalar el APK
 
@@ -381,7 +386,7 @@ mostrar nada. Implementa el contrato `docs/CONTRATO_AUTH.md` del repo
 |---|---|
 | **Access token** | Va en `Authorization: Bearer …`; dura 15 min y se guarda solo en memoria. Si le queda menos de 1 min, se renueva antes de enviar. |
 | **Refresh token** | Android, Windows y Linux: en el almacén seguro del sistema (`flutter_secure_storage`), así la sesión sobrevive a cerrar la app. **Web: en una cookie de la API** (`__Host-refresh`, HttpOnly y Partitioned; CONTRATO_AUTH §6.3): la app nunca lo ve ni lo guarda, y **la sesión sobrevive a recargar la página**. |
-| **Web: al abrir** | `POST /auth/refresh` con `{}`, la cabecera `X-Refresh-En-Cookie: 1` y credenciales. `200`: ya estás dentro. `401 refresh_invalido`: no había sesión, y se muestra el login **sin ningún aviso**. Lo mismo tras entrar con passkey. Cerrar sesión envía `{}` y la API borra la cookie. |
+| **Web: al abrir** | `POST /auth/refresh` con `{}`, la cabecera `X-Refresh-En-Cookie: 1` y credenciales. `200`: ya estás dentro. `401 refresh_invalido`: no había sesión, y se muestra el login **sin ningún aviso**. Si tarda más de 3 s (servidor dormido) se muestra ya el login con el aviso de «despertando»; si al final había sesión, entra solo, y si entras a mano antes, la respuesta vieja se descarta. Lo mismo tras entrar con passkey. Cerrar sesión envía `{}` y la API borra la cookie. |
 | **Brave** | La cookie funciona, pero Brave la trata como efímera: la sesión sigue al recargar, y se pierde unos 30 s después de cerrar la última pestaña de la web (entonces se vuelve al login, sin error). |
 | **Interceptor** (`GestorSesion`) | Ante un `401` de token caducado renueva y repite la petición **una vez**. Si varias peticiones necesitan renovar a la vez, hay **un solo refresh en curso** y las demás lo esperan: con tokens rotativos, dos renovaciones con el mismo token parecerían un robo y la API cerraría la sesión. |
 | **Sin respuesta al renovar** | Se reintenta con el **mismo** refresh: una vez tras un timeout y hasta 2 tras un error de red, nunca pasados 110 s (la API lo acepta repetido durante 120 s). Si se agotan, error de conexión y se conservan los tokens. |

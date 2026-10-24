@@ -17,6 +17,9 @@ class ServidorCookie {
   /// El refresh que guarda el navegador en la cookie (`null`: no hay).
   String? cookie;
 
+  /// Lo que tarda en contestar `/auth/refresh` (Render despertando).
+  Duration demoraRefresh = Duration.zero;
+
   /// Refresh válidos en el servidor (los de cookie y los del cuerpo).
   final _validos = <String>{};
   final _access = <String>{};
@@ -53,8 +56,11 @@ class ServidorCookie {
           'opciones': {'rpId': 'buelvasmanuel.github.io', 'challenge': 'x'},
         });
       case '/auth/refresh':
+        // La cookie viaja al enviar la petición (como en el navegador), no
+        // cuando responde el servidor.
         final refresh =
             cuerpo['refresh_token'] as String? ?? (usaCookie ? cookie : null);
+        await Future<void>.delayed(demoraRefresh);
         if (refresh == null || !_validos.remove(refresh)) {
           if (usaCookie) cookie = null; // un refresh rechazado borra la cookie
           return ServidorFalso.error(401, 'refresh_invalido');

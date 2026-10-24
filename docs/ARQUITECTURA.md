@@ -140,7 +140,7 @@ Tablas del backend (4 migraciones Alembic): `categorias`, `productos`,
 
 | Destino | Cómo | Notas |
 |---|---|---|
-| **Web** | `.github/workflows/web.yml`: push a `main` → `flutter analyze` → `flutter test` → `flutter build web --release --base-href /<repo>/ --dart-define=API_URL=$vars.API_URL` → GitHub Pages | Flutter fijado a 3.47.2; falla si falta la variable `API_URL` |
+| **Web** | `.github/workflows/web.yml`: push a `main` → `flutter analyze` → `flutter test` → `flutter build web --release --no-web-resources-cdn --base-href /<repo>/ --dart-define=API_URL=$vars.API_URL` → GitHub Pages | Flutter fijado a 3.47.2; falla si falta la variable `API_URL` |
 | **APK** | Manual: `flutter build apk --release --dart-define=API_URL=…` → `gh release create` | minSdk = `flutter.minSdkVersion` (24 → Android 7.0); firmado con la clave **debug**; `applicationId com.ejemplo.app_estudiantes` |
 | **Linux / Windows** | `flutter run -d linux|windows` | sin empaquetado ni CI |
 | **API** | Render free (Blueprint `render.yaml`, Oregon): build = `pip install` + `alembic upgrade head` + entrenar modelo; `uvicorn app.main:app --host 0.0.0.0 --port $PORT` | `CORS_ORIGINS=https://buelvasmanuel.github.io`; BD en Aiven MySQL con SSL |
@@ -305,3 +305,12 @@ Este documento describe el estado del commit `6b2c770`. Desde entonces:
   servidor (`TiempoEsperando`), pantalla de carga HTML en `web/index.html`
   (se quita con `flutter-first-frame`), `lang="es"`, nombre y descripción de
   la web, y el enlace directo a `/registro` sin sesión ya no acaba en el login.
+- **Fase 9, arranque** (v1.10.0): con el servidor dormido, `redirigir` recibe
+  `ApiService.despertando` (también en el `refreshListenable`) y, en
+  `restaurando`, manda al login en vez de dejar la pantalla de carga; el
+  login muestra el aviso (`_AvisoDespertando`) y, si el refresh del arranque
+  da 200, entra solo. Si se entra a mano antes, `_soltarRestauracion()` sube
+  la generación y la respuesta vieja (p. ej. su 401) se descarta. CanvasKit
+  alojado en la web (`--no-web-resources-cdn`), nombre de Android
+  «Campus Detective» y sin el botón «Actualizar» en Estudiantes (queda
+  deslizar hacia abajo).

@@ -162,7 +162,19 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
   /// igual que el del login con contraseña.
   Future<void> entrarConPasskey(Future<Object?> Function() tokens) async {
     final enviado = _ahora();
-    await _aplicar(await tokens(), enviado);
+    final json = await tokens();
+    _soltarRestauracion();
+    await _aplicar(json, enviado);
+  }
+
+  /// Se entró a mano (contraseña o passkey) mientras se comprobaba la sesión
+  /// guardada (el login se muestra mientras el servidor despierta): esa
+  /// comprobación ya no cuenta. Si su respuesta llega después, se ignora (no
+  /// cierra la sesión nueva) y las peticiones nuevas no la esperan.
+  void _soltarRestauracion() {
+    if (_renovacion == null) return;
+    _generacion++;
+    _renovacion = null;
   }
 
   Future<void> registrarse(String alias, String password) =>
@@ -253,8 +265,16 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
   // --- Detalles internos -----------------------------------------------------
 
   /// Single-flight: una sola renovación a la vez; el resto espera a esa.
-  Future<void> _renovar() =>
-      _renovacion ??= _hacerRenovacion().whenComplete(() => _renovacion = null);
+  Future<void> _renovar() {
+    final enCurso = _renovacion;
+    if (enCurso != null) return enCurso;
+    late final Future<void> esta;
+    esta = _hacerRenovacion().whenComplete(() {
+      // Solo si sigue siendo la vigente (pudo soltarse al entrar a mano).
+      if (identical(_renovacion, esta)) _renovacion = null;
+    });
+    return _renovacion = esta;
+  }
 
   Future<void> _hacerRenovacion() async {
     final generacion = _generacion;
@@ -320,6 +340,7 @@ class GestorSesion extends InterceptorApi with ChangeNotifier {
   Future<void> _entrar(String ruta, Map<String, Object?> cuerpo) async {
     final enviado = _ahora();
     final json = await _api.enviar(_deSesion('POST', ruta, cuerpo: cuerpo));
+    _soltarRestauracion();
     await _aplicar(json, enviado);
   }
 

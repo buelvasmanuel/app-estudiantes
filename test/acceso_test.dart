@@ -241,7 +241,12 @@ void main() {
       ..protegidas['/estudiantes/'] = estudiantesJson
       ..publicas.remove('/estudiantes/')
       ..revocarSesion();
-    await tester.tap(find.byTooltip('Actualizar'));
+    // Deslizar hacia abajo para actualizar la lista.
+    await tester.fling(
+      find.byType(RefreshIndicator),
+      const Offset(0, 400),
+      1000,
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(AccesoScreen), findsOneWidget);

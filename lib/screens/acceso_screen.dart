@@ -12,6 +12,7 @@ import '../providers.dart';
 import 'mis_passkeys.dart';
 import '../router.dart';
 import '../services/api_service.dart';
+import '../services/sesion.dart';
 import '../tema/temas.dart';
 import '../widgets/estado_vistas.dart';
 
@@ -259,6 +260,20 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
+                        // Se comprueba la sesión guardada y el servidor está
+                        // despertando: el login no espera (si había sesión,
+                        // se entra solo).
+                        ListenableBuilder(
+                          listenable: ref.watch(sesionProvider),
+                          builder: (context, _) =>
+                              ref.read(sesionProvider).estado ==
+                                  EstadoSesion.restaurando
+                              ? const Padding(
+                                  padding: EdgeInsets.only(bottom: 16),
+                                  child: _AvisoDespertando(),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
                         if (aviso != null) ...[
                           _Mensaje(texto: aviso, icono: Icons.info_outline),
                           const SizedBox(height: 16),
@@ -430,6 +445,55 @@ class _AccesoScreenState extends ConsumerState<AccesoScreen> {
                 ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// «Despertando el servidor…» con el tiempo que se lleva esperando.
+class _AvisoDespertando extends StatelessWidget {
+  const _AvisoDespertando();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      child: Card.filled(
+        key: const Key('aviso-despertando'),
+        margin: EdgeInsets.zero,
+        color: c.secondaryContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              SizedBox.square(
+                dimension: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: c.onSecondaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Despertando el servidor (puede tardar uno o dos '
+                      'minutos). Si ya tenías la sesión iniciada, entrarás '
+                      'solo.',
+                      style: TextStyle(color: c.onSecondaryContainer),
+                    ),
+                    const SizedBox(height: 2),
+                    const TiempoEsperando(),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

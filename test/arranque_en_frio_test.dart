@@ -1,5 +1,7 @@
+import 'package:app_estudiantes/services/almacen_refresh.dart';
 import 'package:app_estudiantes/services/api_service.dart';
 import 'package:app_estudiantes/widgets/estado_vistas.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -89,5 +91,126 @@ void main() {
     final api = apiFalsa({'/x': <Object?>[]});
     await api.get('/x');
     expect(api.despertando.value, isFalse);
+  });
+
+  group('API en una dirección local (celular real sin API_URL)', () {
+    /// Como un celular real con la URL por defecto del emulador: nadie
+    /// responde en 10.0.2.2 y la conexión se queda colgada.
+    ApiService colgada(String url) => ApiService(
+      baseUrl: url,
+      client: MockClient((_) async {
+        await Future<void>.delayed(const Duration(minutes: 1));
+        return http.Response('[]', 200);
+      }),
+    );
+
+    testWidgets('10.0.2.2 colgada: sin «despertando», error a los 8 s que '
+        'explica la dirección y API_URL', (tester) async {
+      final api = colgada('http://10.0.2.2:8000');
+      await tester.pumpWidget(appDePrueba(api));
+      await tester.pump(const Duration(seconds: 4));
+      expect(api.despertando.value, isFalse);
+      expect(find.text(CargandoVista.mensajeDespertando), findsNothing);
+
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump();
+      expect(find.text('Reintentar'), findsOneWidget);
+      expect(
+        find.textContaining('solo funciona en el emulador de Android'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('flutter run --dart-define=API_URL='),
+        findsOneWidget,
+      );
+      expect(find.textContaining('despert'), findsNothing);
+      await tester.pump(const Duration(minutes: 1)); // deja terminar el mock
+    });
+
+    test('127.0.0.1 rechaza la conexión: explica que es este equipo', () async {
+      final api = ApiService(
+        baseUrl: 'http://127.0.0.1:8000',
+        client: MockClient(
+          (_) async => throw http.ClientException('rechazada'),
+        ),
+      );
+      await expectLater(
+        api.get('/x'),
+        throwsA(
+          isA<ApiException>().having(
+            (e) => e.mensaje,
+            'mensaje',
+            allOf(
+              contains('solo funciona en este mismo equipo'),
+              contains('uvicorn'),
+              contains('flutter run --dart-define=API_URL='),
+            ),
+          ),
+        ),
+      );
+    });
+
+    testWidgets('con una sesión guardada: el login no dice «despertando»', (
+      tester,
+    ) async {
+      final api = colgada('http://10.0.2.2:8000');
+      await tester.pumpWidget(
+        appDePrueba(
+          api,
+          conSesion: false,
+          almacen: AlmacenEnMemoria('refresh-guardado'),
+        ),
+      );
+      for (var s = 0; s < 30; s++) {
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.byKey(const Key('aviso-despertando')), findsNothing);
+        expect(find.textContaining('Despertando'), findsNothing);
+      }
+      expect(find.textContaining('solo funciona en el emulador'), findsWidgets);
+      await tester.pump(const Duration(minutes: 2)); // deja terminar el mock
+    });
+
+    testWidgets('entrar sin sesión: «Entrando…» y a los 8 s el error junto '
+        'al formulario (nada de «despertando»)', (tester) async {
+      final api = colgada('http://10.0.2.2:8000');
+      await tester.pumpWidget(appDePrueba(api, conSesion: false));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('alias')), 'Detective_Ana');
+      await tester.enterText(
+        find.byKey(const Key('password')),
+        'una frase larga',
+      );
+      await tester.tap(find.text('Entrar'));
+      await tester.pump(const Duration(seconds: 4));
+      expect(find.text('Entrando…'), findsOneWidget);
+      expect(find.textContaining('Despertando'), findsNothing);
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump();
+      expect(find.textContaining('no respondió en 8 s'), findsOneWidget);
+      expect(
+        find.textContaining('solo funciona en el emulador de Android'),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(minutes: 1)); // deja terminar el mock
+    });
+
+    test('la dirección de un PC en la wifi no cambia de consejo', () async {
+      final api = ApiService(
+        baseUrl: 'http://192.168.1.50:8000',
+        client: MockClient(
+          (_) async => throw http.ClientException('rechazada'),
+        ),
+      );
+      await expectLater(
+        api.get('/x'),
+        throwsA(
+          isA<ApiException>().having(
+            (e) => e.mensaje,
+            'mensaje',
+            allOf(contains('¿Está corriendo?'), isNot(contains('API_URL'))),
+          ),
+        ),
+      );
+    });
   });
 }

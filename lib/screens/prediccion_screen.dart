@@ -8,6 +8,7 @@ import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
 import '../formato.dart';
+import '../widgets/titulo_barra.dart';
 
 /// Pestaña 3: formulario que pide al modelo de la API si un estudiante con
 /// esos datos estaría en riesgo académico.
@@ -86,7 +87,7 @@ class _PrediccionScreenState extends ConsumerState<PrediccionScreen> {
     });
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Predicción'),
+        title: const TituloBarra('Predicción'),
         bottom: widget.pestanas,
         actions: const [MenuCuenta()],
       ),
@@ -549,8 +550,6 @@ class _SobreElModelo extends StatelessWidget {
                                 ),
                                 Text(
                                   ayuda,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
                                   style: tema.textTheme.bodySmall?.copyWith(
                                     color: tema.colorScheme.onSurfaceVariant,
                                   ),

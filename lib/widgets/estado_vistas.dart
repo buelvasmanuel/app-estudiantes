@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -17,8 +20,9 @@ class CargandoVista extends StatelessWidget {
   final String mensaje;
   final ValueListenable<bool>? despertando;
 
+  /// Medido: tras días sin uso, Render tarda más de un minuto en responder.
   static const mensajeDespertando =
-      'Despertando el servidor, puede tardar hasta un minuto…';
+      'Despertando el servidor, puede tardar uno o dos minutos…';
 
   @override
   Widget build(BuildContext context) {
@@ -47,10 +51,56 @@ class CargandoVista extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 4),
+                // Que una espera larga no parezca un cuelgue.
+                const TiempoEsperando(),
               ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// «Llevas 35 s esperando», contado desde que aparece. No es una región
+/// viva: el lector de pantalla no lo repite cada segundo.
+class TiempoEsperando extends StatefulWidget {
+  const TiempoEsperando({super.key});
+
+  @override
+  State<TiempoEsperando> createState() => _TiempoEsperandoState();
+}
+
+class _TiempoEsperandoState extends State<TiempoEsperando> {
+  final _inicio = clock.now();
+  late final Timer _reloj = Timer.periodic(
+    const Duration(seconds: 1),
+    (_) => setState(() {}),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _reloj; // arranca el reloj
+  }
+
+  @override
+  void dispose() {
+    _reloj.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    final s = clock.now().difference(_inicio).inSeconds;
+    return Text(
+      'Llevas $s s esperando',
+      key: const Key('tiempo-esperando'),
+      style: tema.textTheme.bodySmall?.copyWith(
+        color: tema.colorScheme.onSurfaceVariant,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
     );
   }

@@ -19,6 +19,10 @@ abstract final class MisPasskeysTextos {
       'Este dispositivo ya guarda una passkey de tu cuenta.';
   static const creada =
       'Passkey creada. La próxima vez puedes entrar con ella.';
+  static const passwordIncorrecta =
+      'Esa no es tu contraseña. Escríbela otra vez para crear la passkey.';
+  static const demasiadas =
+      'Ya tienes 10 passkeys, el máximo. Borra alguna para añadir otra.';
 }
 
 /// «Mis passkeys» en el Perfil (solo web): crear, ver y borrar. En el APK y
@@ -37,14 +41,16 @@ class _MisPasskeysState extends ConsumerState<MisPasskeys> {
   ({String texto, bool error})? _aviso;
 
   Future<void> _crear() async {
-    final nombre = await _pedirNombre();
-    if (nombre == null || !mounted) return;
+    final datos = await _pedirDatos();
+    if (datos == null || !mounted) return;
     setState(() {
       _creando = true;
       _aviso = null;
     });
     try {
-      await ref.read(passkeysApiProvider).crear(nombre: nombre);
+      await ref
+          .read(passkeysApiProvider)
+          .crear(passwordActual: datos.password, nombre: datos.nombre);
       ref.invalidate(misPasskeysProvider);
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -68,6 +74,10 @@ class _MisPasskeysState extends ConsumerState<MisPasskeys> {
       switch (e.codigo) {
         case 'passkey_repetida':
           _avisar(MisPasskeysTextos.yaEnEsteDispositivo);
+        case 'password_actual_incorrecta':
+          _avisar(MisPasskeysTextos.passwordIncorrecta, error: true);
+        case 'demasiadas_passkeys':
+          _avisar(MisPasskeysTextos.demasiadas, error: true);
         case 'reto_invalido':
           _avisar('La solicitud caducó. Inténtalo de nuevo.', error: true);
         default:
@@ -82,10 +92,11 @@ class _MisPasskeysState extends ConsumerState<MisPasskeys> {
     if (mounted) setState(() => _aviso = (texto: texto, error: error));
   }
 
-  Future<String?> _pedirNombre() => showDialog<String>(
-    context: context,
-    builder: (_) => const _DialogoNombre(),
-  );
+  Future<({String nombre, String password})?> _pedirDatos() =>
+      showDialog<({String nombre, String password})>(
+        context: context,
+        builder: (_) => const _DialogoNueva(),
+      );
 
   Future<void> _borrar(Passkey p) async {
     final si = await showDialog<bool>(
@@ -267,47 +278,73 @@ class _Nota extends StatelessWidget {
   }
 }
 
-/// Pide el nombre de la passkey. El diálogo es dueño de su controlador: se
-/// libera cuando el diálogo desaparece, no antes (la animación de cierre aún
-/// lo usa).
-class _DialogoNombre extends StatefulWidget {
-  const _DialogoNombre();
+/// Pide el nombre de la passkey y la contraseña actual (CONTRATO_PASSKEYS
+/// v2). El diálogo es dueño de sus controladores: se liberan cuando
+/// desaparece, no antes (la animación de cierre aún los usa).
+class _DialogoNueva extends StatefulWidget {
+  const _DialogoNueva();
 
   @override
-  State<_DialogoNombre> createState() => _DialogoNombreState();
+  State<_DialogoNueva> createState() => _DialogoNuevaState();
 }
 
-class _DialogoNombreState extends State<_DialogoNombre> {
+class _DialogoNuevaState extends State<_DialogoNueva> {
   final _nombre = TextEditingController(text: 'Este dispositivo');
+  final _password = TextEditingController();
+  bool _ver = false;
 
   @override
   void dispose() {
     _nombre.dispose();
+    _password.dispose();
     super.dispose();
+  }
+
+  void _aceptar() {
+    if (_password.text.isEmpty) return;
+    Navigator.of(context).pop((nombre: _nombre.text, password: _password.text));
   }
 
   @override
   Widget build(BuildContext context) => AlertDialog(
     title: const Text('Nueva passkey'),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Ponle un nombre para reconocerla (por ejemplo, «Portátil de '
-          'casa»). Después el navegador te pedirá tu huella, tu cara o tu '
-          'PIN.',
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          key: const Key('nombre-passkey'),
-          controller: _nombre,
-          autofocus: true,
-          maxLength: 60,
-          decoration: const InputDecoration(labelText: 'Nombre'),
-          onSubmitted: (v) => Navigator.of(context).pop(v),
-        ),
-      ],
+    content: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Ponle un nombre para reconocerla (por ejemplo, «Portátil de '
+            'casa») y confirma que eres tú con tu contraseña. Después el '
+            'navegador te pedirá tu huella, tu cara o tu PIN.',
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('nombre-passkey'),
+            controller: _nombre,
+            maxLength: 60,
+            decoration: const InputDecoration(labelText: 'Nombre'),
+          ),
+          const SizedBox(height: 4),
+          TextField(
+            key: const Key('password-passkey'),
+            controller: _password,
+            autofocus: true,
+            obscureText: !_ver,
+            autofillHints: const [AutofillHints.password],
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => _aceptar(),
+            decoration: InputDecoration(
+              labelText: 'Tu contraseña',
+              suffixIcon: IconButton(
+                tooltip: _ver ? 'Ocultar contraseña' : 'Mostrar contraseña',
+                onPressed: () => setState(() => _ver = !_ver),
+                icon: Icon(_ver ? Icons.visibility_off : Icons.visibility),
+              ),
+            ),
+          ),
+        ],
+      ),
     ),
     actions: [
       TextButton(
@@ -316,7 +353,7 @@ class _DialogoNombreState extends State<_DialogoNombre> {
       ),
       FilledButton(
         key: const Key('confirmar-nombre-passkey'),
-        onPressed: () => Navigator.of(context).pop(_nombre.text),
+        onPressed: _password.text.isEmpty ? null : _aceptar,
         child: const Text('Crear'),
       ),
     ],

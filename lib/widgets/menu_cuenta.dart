@@ -94,10 +94,9 @@ class MenuCuenta extends ConsumerWidget {
           value: _Opcion.tema,
           child: ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Text(
-              otro == TemaJuego.noche ? '🌙' : '📁',
-              style: const TextStyle(fontSize: 20),
-            ),
+            // Iconos y no emojis: en la web, un emoji obliga a descargar una
+            // fuente de emojis aparte.
+            leading: Icon(otro.icono),
             title: Text('Tema ${otro.nombre}'),
           ),
         ),

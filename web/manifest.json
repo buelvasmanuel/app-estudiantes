@@ -1,11 +1,11 @@
 {
-    "name": "Estudiantes",
-    "short_name": "Estudiantes",
+    "name": "Campus Detective",
+    "short_name": "Detective",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#3F51B5",
     "theme_color": "#3F51B5",
-    "description": "A new Flutter project.",
+    "description": "Un juego para aprender a leer datos de estudiantes, con casos, rescates y duelos de cartas.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
@@ -31,5 +31,6 @@
             "type": "image/png",
             "purpose": "maskable"
         }
-    ]
+    ],
+    "lang": "es"
 }

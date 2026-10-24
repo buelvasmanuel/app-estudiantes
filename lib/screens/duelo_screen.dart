@@ -22,6 +22,7 @@ import '../tema/temas.dart';
 import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
+import '../widgets/titulo_barra.dart';
 
 /// El duelo de cartas (docs/CONTRATO_DUELO.md 2.1), contra el Búho Máquina
 /// o contra otro jugador.
@@ -405,7 +406,7 @@ class _DueloScreenState extends ConsumerState<DueloScreen> {
     final duelo = _duelo;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Duelo'),
+        title: const TituloBarra('Duelo'),
         // Junto a la flecha: con la bandera, el chip y el avatar, a 360 px
         // el título no cabría con el margen normal.
         titleSpacing: 0,

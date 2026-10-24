@@ -67,6 +67,25 @@ void main() {
     expect(find.text('Espera 30 s'), findsOneWidget);
     final boton = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(boton.onPressed, isNull);
+    // El aviso lleva la misma cuenta atrás que el botón…
+    expect(
+      find.text(
+        'Demasiados intentos. Espera 30 s antes de volver a intentarlo.',
+      ),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 10));
+    expect(find.text('Espera 20 s'), findsOneWidget);
+    expect(
+      find.text(
+        'Demasiados intentos. Espera 20 s antes de volver a intentarlo.',
+      ),
+      findsOneWidget,
+    );
+    // …y al terminar desaparece (no se queda un «27 s» viejo).
+    await tester.pump(const Duration(seconds: 21));
+    expect(find.textContaining('Demasiados intentos'), findsNothing);
+    expect(find.text('Entrar'), findsOneWidget);
   });
 
   testWidgets('registro: valida antes de enviar y después entra', (

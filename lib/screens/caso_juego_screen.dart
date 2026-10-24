@@ -16,6 +16,7 @@ import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
 import '../widgets/grafica_barras.dart';
+import '../widgets/titulo_barra.dart';
 
 /// Un caso: enunciado, ficha (gráfica), opciones y lo que dice el servidor.
 class CasoJuegoScreen extends ConsumerStatefulWidget {
@@ -73,7 +74,10 @@ class _CasoJuegoScreenState extends ConsumerState<CasoJuegoScreen> {
   Widget build(BuildContext context) {
     final estado = ref.watch(casoJuegoProvider(widget.codigo));
     return Scaffold(
-      appBar: AppBar(title: const Text('Caso'), actions: const [MenuCuenta()]),
+      appBar: AppBar(
+        title: const TituloBarra('Caso'),
+        actions: const [MenuCuenta()],
+      ),
       body: switch (estado) {
         // skipLoadingOnRefresh: tras responder se recarga sin parpadear.
         AsyncValue(value: final CasoJuego caso) => _contenido(caso),

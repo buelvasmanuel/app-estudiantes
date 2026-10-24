@@ -8,6 +8,7 @@ import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
 import '../widgets/grafica_barras.dart';
 import '../formato.dart';
+import '../widgets/titulo_barra.dart';
 
 /// Pestaña 2: estadísticas de los estudiantes en una gráfica de barras.
 class GraficasScreen extends ConsumerStatefulWidget {
@@ -49,7 +50,7 @@ class _GraficasScreenState extends ConsumerState<GraficasScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gráficas'),
+        title: const TituloBarra('Gráficas'),
         bottom: widget.pestanas,
         actions: [
           IconButton(

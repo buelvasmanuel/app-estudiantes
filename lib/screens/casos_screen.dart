@@ -10,6 +10,7 @@ import '../router.dart';
 import '../theme.dart';
 import '../widgets/estado_vistas.dart';
 import '../widgets/menu_cuenta.dart';
+import '../widgets/titulo_barra.dart';
 
 /// Pestaña "Casos": preguntas que se resuelven mirando los datos.
 class CasosScreen extends ConsumerWidget {
@@ -19,7 +20,10 @@ class CasosScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final estado = ref.watch(casosJuegoProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Casos'), actions: const [MenuCuenta()]),
+      appBar: AppBar(
+        title: const TituloBarra('Casos'),
+        actions: const [MenuCuenta()],
+      ),
       body: switch (estado) {
         AsyncValue(value: final List<CasoJuegoResumen> casos) => _Lista(
           casos: casos,

@@ -32,19 +32,31 @@ class DueloApi {
 
   /// Busca rival (§7.1): empareja con quien espera, o deja el duelo
   /// `esperando` (60 s). Si ya había uno contra un jugador en juego
-  /// (`409 duelo_en_curso`), lo retoma.
+  /// (`409 duelo_en_curso`), lo retoma. Con muchas búsquedas a la vez, la
+  /// API responde `503 emparejamiento_ocupado` (§7.1, v2.4): se vuelve a
+  /// intentar un par de veces tras [esperaOcupado].
   Future<Duelo> buscarRival() async {
-    try {
-      return _api.parsear<Duelo>(
-        await _api.post('/duelos', {'modo': 'jugador'}),
-        Duelo.fromJson,
-      );
-    } on ApiException catch (e) {
-      final id = e.detalle?['duelo_id'];
-      if (e.codigo == 'duelo_en_curso' && id is String) return await duelo(id);
-      rethrow;
+    for (var intento = 0; ; intento++) {
+      try {
+        return _api.parsear<Duelo>(
+          await _api.post('/duelos', {'modo': 'jugador'}),
+          Duelo.fromJson,
+        );
+      } on ApiException catch (e) {
+        final id = e.detalle?['duelo_id'];
+        if (e.codigo == 'duelo_en_curso' && id is String) {
+          return await duelo(id);
+        }
+        if (e.codigo == 'emparejamiento_ocupado' && intento < 2) {
+          await Future<void>.delayed(esperaOcupado);
+          continue;
+        }
+        rethrow;
+      }
     }
   }
+
+  static const esperaOcupado = Duration(seconds: 2);
 
   /// El duelo contra la máquina que estaba a medias, si hay uno.
   Future<String?> enJuegoContraMaquina() async {

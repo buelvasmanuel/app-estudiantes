@@ -31,9 +31,13 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     expect(find.text(CargandoVista.mensajeDespertando), findsOneWidget);
     expect(api.despertando.value, isTrue);
+    // Cuenta cuánto se lleva esperando (que no parezca colgado).
+    expect(find.text('Llevas 0 s esperando'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+    expect(find.text('Llevas 10 s esperando'), findsOneWidget);
 
     // 40 s > 8 s del timeout normal: no falla porque en frío espera 60 s.
-    await tester.pump(const Duration(seconds: 37));
+    await tester.pump(const Duration(seconds: 27));
     await tester.pumpAndSettle();
     expect(find.text('Jorge Rodríguez'), findsOneWidget);
     expect(api.despertando.value, isFalse);

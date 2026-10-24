@@ -73,6 +73,9 @@ class PasskeysFalso {
   /// Código de error que darán las verificaciones (login o registro).
   String? falloVerificacion;
 
+  /// Contraseña de la cuenta (CONTRATO_PASSKEYS v2: se pide para registrar).
+  static const password = 'una frase larga';
+
   int _retos = 0;
   int _ids = 1;
 
@@ -116,6 +119,23 @@ class PasskeysFalso {
     if (!conSesion) return ServidorFalso.error(401, 'no_autenticado');
     switch ((p.method, ruta)) {
       case ('POST', '/passkeys/registro/opciones'):
+        final actual = cuerpo['password_actual'];
+        if (actual is! String) {
+          return ServidorFalso.json({
+            'detail': [
+              {
+                'msg': 'Field required',
+                'loc': ['body', 'password_actual'],
+              },
+            ],
+          }, 422);
+        }
+        if (actual != password) {
+          return ServidorFalso.error(403, 'password_actual_incorrecta');
+        }
+        if (passkeys.length >= 10) {
+          return ServidorFalso.error(409, 'demasiadas_passkeys');
+        }
         return ServidorFalso.json({
           'reto_id': 'reto-${++_retos}',
           'opciones': {

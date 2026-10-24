@@ -10,6 +10,7 @@ import '../providers.dart';
 import '../services/api_service.dart';
 import '../widgets/estado_vistas.dart';
 import '../formato.dart';
+import '../widgets/titulo_barra.dart';
 
 /// Panel del docente: crear cuentas para la clase y ver a los jugadores.
 /// Solo para los roles docente y admin (la API también lo exige).
@@ -22,7 +23,7 @@ class DocenteScreen extends ConsumerWidget {
     final rol = ref.read(sesionProvider).usuario?.rol;
     if (rol != Rol.docente && rol != Rol.admin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Panel del docente')),
+        appBar: AppBar(title: const TituloBarra('Panel del docente')),
         body: const VaciaVista(
           mensaje: 'Este panel es solo para docentes.',
           icono: Icons.lock_outline,
@@ -33,7 +34,7 @@ class DocenteScreen extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Panel del docente'),
+          title: const TituloBarra('Panel del docente'),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Crear cuentas'),

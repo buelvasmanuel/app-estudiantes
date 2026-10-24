@@ -22,6 +22,9 @@ class SelectorDatos extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final shell = StatefulNavigationShell.maybeOf(context);
     if (shell == null) return const SizedBox.shrink();
+    // En pantallas estrechas, sin iconos: así «Estudiantes» cabe con la
+    // misma letra que las otras dos (antes se encogía).
+    final conIconos = MediaQuery.sizeOf(context).width >= 400;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
       child: SegmentedButton<int>(
@@ -30,7 +33,7 @@ class SelectorDatos extends StatelessWidget implements PreferredSizeWidget {
           for (final (i, (icono, texto)) in _opciones.indexed)
             ButtonSegment(
               value: i,
-              icon: Icon(icono, size: 18),
+              icon: conIconos ? Icon(icono, size: 18) : null,
               label: FittedBox(fit: BoxFit.scaleDown, child: Text(texto)),
             ),
         ],

@@ -18,6 +18,7 @@ import '../widgets/grafica_barras.dart';
 import '../widgets/menu_cuenta.dart';
 import '../widgets/promedio_badge.dart';
 import '../formato.dart';
+import '../widgets/titulo_barra.dart';
 
 /// Pestaña "Campus": cada edificio es una carrera, cada piso un semestre y
 /// cada ventana un estudiante (roja si está en riesgo).
@@ -60,7 +61,10 @@ class _Marco extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Campus'), actions: const [MenuCuenta()]),
+    appBar: AppBar(
+      title: const TituloBarra('Campus'),
+      actions: const [MenuCuenta()],
+    ),
     body: cuerpo,
   );
 }
@@ -113,7 +117,7 @@ class CampusVistaState extends State<CampusVista> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Campus'),
+        title: const TituloBarra('Campus'),
         actions: [
           _Buscador(
             estudiantes: widget.estudiantes,

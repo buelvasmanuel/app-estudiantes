@@ -88,6 +88,37 @@ void main() {
     expect(find.text('Entrar'), findsOneWidget);
   });
 
+  testWidgets('registro con una contraseña común (422 password_comun): el '
+      'aviso va junto al campo y se quita al escribir otra', (tester) async {
+    final servidor = _servidor();
+    await tester.pumpWidget(appDePrueba(servidor.api(), conSesion: false));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('¿No tienes cuenta? Regístrate'));
+    await tester.pumpAndSettle();
+    await _escribir(tester, 'alias', 'Nuevo_Detective');
+    await _escribir(tester, 'password', 'Universidad1');
+    await _escribir(tester, 'repetida', 'Universidad1');
+    await tester.tap(find.text('Crear cuenta'));
+    await tester.pumpAndSettle();
+
+    const aviso =
+        'Esa contraseña es demasiado común y se adivina enseguida: elige otra';
+    final campo = tester.widget<TextField>(
+      find.descendant(
+        of: find.byKey(const Key('password')),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(campo.decoration?.errorText, aviso);
+    // Junto al campo, no en el recuadro de errores generales.
+    expect(find.byIcon(Icons.error_outline), findsNothing);
+    expect(find.byType(AccesoScreen), findsOneWidget);
+
+    await _escribir(tester, 'password', 'mi lupa favorita');
+    await tester.pumpAndSettle(); // el error se va con un fundido corto
+    expect(find.text(aviso), findsNothing);
+  });
+
   testWidgets('registro: valida antes de enviar y después entra', (
     tester,
   ) async {

@@ -180,6 +180,26 @@ void main() {
       );
       expect(find.byKey(const Key('mi-carta')), findsOneWidget);
     });
+
+    testWidgets('503 emparejamiento_ocupado (v2.4): lo reintenta solo', (
+      tester,
+    ) async {
+      final s = DueloJugadorFalso()..ocupado = 2;
+      await _abrir(tester, s);
+      await _segundos(tester, 5); // dos esperas de 2 s
+      expect(s.registro.where((r) => r == 'POST /duelos'), hasLength(3));
+      expect(find.text('Buscando a otro detective…'), findsOneWidget);
+    });
+
+    testWidgets('si sigue ocupado, error con «Reintentar» (sin bucle)', (
+      tester,
+    ) async {
+      final s = DueloJugadorFalso()..ocupado = 5;
+      await _abrir(tester, s);
+      await _segundos(tester, 10);
+      expect(s.registro.where((r) => r == 'POST /duelos'), hasLength(3));
+      expect(find.text('Reintentar'), findsOneWidget);
+    });
   });
 
   testWidgets(

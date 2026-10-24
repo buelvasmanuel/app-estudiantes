@@ -439,7 +439,7 @@ FLUSH PRIVILEGES;
 
 ```bash
 pytest           # en api-tienda, con el venv activado → 638 passed, 3 skipped
-flutter test     # en app_estudiantes → 252 tests passed
+flutter test     # en app_estudiantes → 251 tests passed
 ```
 
 ---
